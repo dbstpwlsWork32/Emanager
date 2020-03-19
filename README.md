@@ -1,5 +1,21 @@
 # hmanager
 
+## USE LIST
+
+1. @vue/cli + electron (self config setting)
+
+## TODO
+
+[ ] VPN
+
+[ ] AUTO DOWNLOADER
+
+[ ] FILE MANAGER
+
+
+***
+---
+
 ## Project setup
 ```
 yarn install
