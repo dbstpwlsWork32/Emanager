@@ -1,10 +1,23 @@
-# hmanager
+# Emanager
+
+## concept
+
+entertainment file and entertainment site search and manage
 
 ## USE LIST
 
 1. @vue/cli + electron (self config setting)
 
-## TODO
+## BE-TODO
+
+[ ] ENETERTAINMENET FILE SORT AND MANAGEMENT (LIKE PICTURES, VIDEOS, GAME)
+
+[ ] E-FILE SEARCH AND ADD SUBJECT TAG
+
+[ ] E-SITE WEB CROLLING
+
+
+## LAST-TODO
 
 [ ] VPN
 
