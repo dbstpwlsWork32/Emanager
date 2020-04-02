@@ -1,9 +1,10 @@
 <template>
-  <v-list nav>
+  <v-list nav dense>
     <v-list-item
       v-for="(item, i) in items"
       :key=i
       link
+      :to="item.path"
     >
       <v-list-item-icon>
         <v-icon>{{item.icon}}</v-icon>
@@ -24,19 +25,23 @@ export default Vue.extend({
     items: [
       {
         icon: 'mdi-view-dashboard',
-        text: 'Home'
+        text: 'Home',
+        path: '/'
       },
       {
         icon: 'mdi-panorama',
-        text: 'Picture'
+        text: 'Picture',
+        path: '/picture'
       },
       {
         icon: 'mdi-video',
-        text: 'Video'
+        text: 'Video',
+        path: '/video'
       },
       {
         icon: 'mdi-file',
-        text: 'Others'
+        text: 'Others',
+        path: '/others'
       }
     ]
   })

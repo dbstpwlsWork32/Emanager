@@ -1,11 +1,13 @@
 <template>
-  <router-view></router-view>
+  <v-card>
+    this is Home.vue
+  </v-card>
 </template>
 
 <script lang="ts">
 import Vue from 'vue'
 
 export default Vue.extend({
-  name: 'Body'
+  name: 'Home'
 })
 </script>
