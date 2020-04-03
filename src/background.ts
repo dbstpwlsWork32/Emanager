@@ -96,8 +96,8 @@ if (isDevelopment) {
 import { ipcMain } from 'electron'
 import db from './background/db'
 
-ipcMain.on('dbLoad', (ev, args) => {
+ipcMain.on('db_folderList', (ev, args) => {
   db.load().then(rs => {
-    ev.reply('dbLoad_reply', rs)
+    ev.reply('db_folderList_reply', rs)
   })
 })
