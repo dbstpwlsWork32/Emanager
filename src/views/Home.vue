@@ -1,13 +1,19 @@
 <template>
   <v-card>
-    this is Home.vue
   </v-card>
 </template>
 
 <script lang="ts">
 import Vue from 'vue'
+import { ipcRenderer } from 'electron'
 
 export default Vue.extend({
-  name: 'Home'
+  name: 'Home',
+  beforeMount: function () {
+    ipcRenderer.send('dbLoad')
+    ipcRenderer.on('dbLoad_reply', (ev, args) => {
+      console.log(args)
+    })
+  }
 })
 </script>

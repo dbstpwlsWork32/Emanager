@@ -91,3 +91,13 @@ if (isDevelopment) {
     })
   }
 }
+
+// ================ set ipc protocol
+import { ipcMain } from 'electron'
+import db from './background/db'
+
+ipcMain.on('dbLoad', (ev, args) => {
+  db.load().then(rs => {
+    ev.reply('dbLoad_reply', rs)
+  })
+})

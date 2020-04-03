@@ -1,14 +1,23 @@
-interface file {
-  import: Date
-}
-
 import { getAppDataPath } from './getAppDataFolder'
+import GetFolderStructure from './folderStructure'
 import Datastore from 'nedb'
 
-let db = {
-  file: new Datastore({ filename: getAppDataPath('test.db'), autoload: true })
+interface db {
+  list: Nedb,
+  [propname: string]: Nedb
 }
+let db = {
+  list: new Datastore({ filename: getAppDataPath('emanager/all'), autoload: true })
+}
+db.list.loadDatabase()
 
-db.file.loadDatabase()
-
-// https://lts0606.tistory.com/263  
+export default {
+  load : () => {
+    return new Promise((rs, rj) => {
+      db.list.find({}, (er:any, docs:any) => {
+        if (er) rs(docs)
+        else rs(docs)
+      })
+    })
+  }
+}
