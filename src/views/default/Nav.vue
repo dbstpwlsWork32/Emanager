@@ -1,19 +1,36 @@
 <template>
-  <v-list nav dense>
-    <v-list-item
-      v-for="(item, i) in items"
-      :key=i
-      link
-      :to="item.path"
-    >
-      <v-list-item-icon>
-        <v-icon>{{item.icon}}</v-icon>
-      </v-list-item-icon>
-      <v-list-item-content>
-        <v-list-item-title>{{item.text}}</v-list-item-title>
-      </v-list-item-content>
-    </v-list-item>
-  </v-list>
+  <v-navigation-drawer
+    permanent
+    app
+    width=180px
+    id="nav"
+  >
+    <v-list nav>
+      <v-list-item
+        link
+        to="/"
+      >
+        <v-list-item-icon>
+          <v-icon>mdi-view-dashboard</v-icon>
+        </v-list-item-icon>
+        <v-list-item-content>
+          <v-list-item-title>Home</v-list-item-title>
+        </v-list-item-content>
+      </v-list-item>
+
+      <v-list-item
+          link
+          to="/favorite"
+        >
+        <v-list-item-icon>
+          <v-icon>mdi-heart</v-icon>
+        </v-list-item-icon>
+        <v-list-item-content>
+          <v-list-item-title>Favorite</v-list-item-title>
+        </v-list-item-content>
+      </v-list-item>
+    </v-list>
+  </v-navigation-drawer>
 </template>
 
 <script lang="ts">
@@ -22,28 +39,6 @@ import Vue from 'vue'
 export default Vue.extend({
   name: 'Header',
   data: () => ({
-    items: [
-      {
-        icon: 'mdi-view-dashboard',
-        text: 'Home',
-        path: '/'
-      },
-      {
-        icon: 'mdi-panorama',
-        text: 'Picture',
-        path: '/picture'
-      },
-      {
-        icon: 'mdi-video',
-        text: 'Video',
-        path: '/video'
-      },
-      {
-        icon: 'mdi-file',
-        text: 'Others',
-        path: '/others'
-      }
-    ]
   })
 })
 </script>
