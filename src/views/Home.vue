@@ -76,7 +76,7 @@ export default Vue.extend({
   },
   created: function () {
     ipcRenderer.send('db_folderList')
-    ipcRenderer.on('db_folderList_reply', (ev, args) => {
+    ipcRenderer.once('db_folderList_reply', (ev, args) => {
       this.$data.folderList = args
     })
   },
@@ -93,8 +93,13 @@ export default Vue.extend({
           this.$data.addClickHandler.alertError = 'Already Exist Folder'
         } else {
           this.$data.addClickHandler.isExist = true
-          this.$store.commit('addFolderList', urlEl.value)
           this.$data.dialog = false
+          this.$store.commit('addFolderList', urlEl.value)
+
+          ipcRenderer.send('db_addFolderList')
+          ipcRenderer.once('db_addFolderList_reply', (ev, args) => {
+            args
+          })
         }
       })
     }

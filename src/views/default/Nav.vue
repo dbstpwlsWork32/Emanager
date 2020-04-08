@@ -8,25 +8,15 @@
     <v-list nav>
       <v-list-item
         link
-        to="/"
+        v-for="(item, i) in defaultNav"
+        :key="i"
+        :to="item.path"
       >
         <v-list-item-icon>
-          <v-icon>mdi-view-dashboard</v-icon>
+          <v-icon>{{item.icon}}</v-icon>
         </v-list-item-icon>
         <v-list-item-content>
-          <v-list-item-title>Home</v-list-item-title>
-        </v-list-item-content>
-      </v-list-item>
-
-      <v-list-item
-          link
-          to="/favorite"
-        >
-        <v-list-item-icon>
-          <v-icon>mdi-heart</v-icon>
-        </v-list-item-icon>
-        <v-list-item-content>
-          <v-list-item-title>Favorite</v-list-item-title>
+          <v-list-item-title>{{item.text}}</v-list-item-title>
         </v-list-item-content>
       </v-list-item>
     </v-list>
@@ -39,6 +29,23 @@ import Vue from 'vue'
 export default Vue.extend({
   name: 'Header',
   data: () => ({
+    defaultNav: [
+      {
+        icon: 'mdi-view-dashboard',
+        text: 'Home',
+        path: '/'
+      },
+      {
+        icon: 'mdi-heart',
+        text: 'Favorite',
+        path: '/favorite'
+      },
+      {
+        icon: 'mdi-folder-clock',
+        text: 'Current',
+        path: '/current'
+      }
+    ]
   })
 })
 </script>

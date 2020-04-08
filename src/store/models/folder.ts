@@ -19,6 +19,16 @@ export class FolderModel {
     this.data = data
   }
 
-  readonly folderUrl: string
-  readonly data: OneDirReadResultAll[] = []
+  folderUrl: string
+  data: OneDirReadResultAll[] = []
+}
+
+export class FolderListModel {
+  constructor(
+    folderUrl: string
+  ) {
+    this.folderUrl = folderUrl
+  }
+
+  folderUrl: string
 }

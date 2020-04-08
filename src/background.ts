@@ -17,6 +17,8 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { secure: tru
 function createWindow () {
   // Create the browser window.
   win = new BrowserWindow({
+    width: 1200,
+    height: 700,
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
@@ -101,5 +103,11 @@ import db from './background/db'
 ipcMain.on('db_folderList', (ev, args) => {
   db.load().then(rs => {
     ev.reply('db_folderList_reply', rs)
+  })
+})
+
+ipcMain.on('db_addFolderList', (ev, args) => {
+  db.reloadFolderOfUrl(args).then((result:any) => {
+    ev.reply('db_addFolderList_reply', result)
   })
 })
