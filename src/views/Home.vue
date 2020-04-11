@@ -9,6 +9,21 @@
       <v-card-subtitle>{{folder}}</v-card-subtitle>
     </v-card>
 
+    <v-card class="l__home_folder-list">
+      <v-img
+        src="../../dist/aa.jpg"
+      ></v-img>
+      <v-icon color="rgb(254, 201, 40)">mdi-folder</v-icon>
+      <v-card-subtitle>asdasddsadas</v-card-subtitle>
+      <v-progress-circular
+        indeterminate
+        color="primary"
+        :size=50
+        link
+        to='/s'
+      ></v-progress-circular>
+    </v-card>
+
     <div class="l__home_folder-list bt">
       <v-dialog v-model="dialog" width="500px" content-class="l__home_dialog">
         <template v-slot:activator="{ on }">
@@ -77,7 +92,9 @@ export default Vue.extend({
   created: function () {
     ipcRenderer.send('db_folderList')
     ipcRenderer.once('db_folderList_reply', (ev, args) => {
-      this.$data.folderList = args
+      args.forEach(item => {
+        this.$store.commit('addFolderList', item.path)
+      })
     })
   },
   methods: {
@@ -96,9 +113,10 @@ export default Vue.extend({
           this.$data.dialog = false
           this.$store.commit('addFolderList', urlEl.value)
 
-          ipcRenderer.send('db_addFolderList')
+          ipcRenderer.send('db_addFolderList', urlEl.value)
           ipcRenderer.once('db_addFolderList_reply', (ev, args) => {
-            args
+            if (args) console.log('success!')
+            else console.log('fail...')
           })
         }
       })

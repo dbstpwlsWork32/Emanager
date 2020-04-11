@@ -101,7 +101,7 @@ import { ipcMain } from 'electron'
 import db from './background/db'
 
 ipcMain.on('db_folderList', (ev, args) => {
-  db.load().then(rs => {
+  db.outerListLoad().then(rs => {
     ev.reply('db_folderList_reply', rs)
   })
 })
@@ -109,5 +109,7 @@ ipcMain.on('db_folderList', (ev, args) => {
 ipcMain.on('db_addFolderList', (ev, args) => {
   db.reloadFolderOfUrl(args).then((result:any) => {
     ev.reply('db_addFolderList_reply', result)
+  }).catch(er => {
+    console.log(`folderStructure db set er\n ${er}`)
   })
 })
