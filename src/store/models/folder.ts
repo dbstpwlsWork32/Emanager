@@ -24,11 +24,10 @@ export class FolderModel {
 }
 
 export class FolderListModel {
-  constructor(
-    folderUrl: string
-  ) {
-    this.folderUrl = folderUrl
+  name: string;
+  path: string;
+  constructor() {
+    this.name = ''
+    this.path = ''
   }
-
-  folderUrl: string
 }

@@ -26,22 +26,20 @@ interface SettingGetFile {
 class GetFolderStructure {
   constructor(
     basePath: string,
-    userSetting: {
-      changeDefaultGetFile: {
-        fileType: string,
-        replace: {
-          regExp?: RegExp[];
-          fileType?: string;
-          isGet?: boolean;
-        }
-      }[],
-      getFile: SettingGetFile[]
-    } = { changeDefaultGetFile: [], getFile: []}
+    changeDefaultGetFile: {
+      fileType: string,
+      replace: {
+        regExp?: RegExp[];
+        fileType?: string;
+        isGet?: boolean;
+      }
+    }[] = [],
+    getFile: SettingGetFile[] = []
   ) {
     this.basePath = basePath
 
     // chagne default setting
-    userSetting.changeDefaultGetFile.forEach(item => {
+    changeDefaultGetFile.forEach(item => {
       for (let i=0; i<this.getFile.length; i++) {
         const getFile = this.getFile[i]
         if (getFile.fileType === item.fileType) {
@@ -52,7 +50,7 @@ class GetFolderStructure {
     })
 
     // insert user.getFileSetting
-    this.getFile = [...this.getFile, ...userSetting.getFile]
+    this.getFile = [...this.getFile, ...getFile]
   }
 
   private basePath: string

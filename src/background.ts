@@ -100,7 +100,7 @@ if (isDevelopment) {
 import { ipcMain } from 'electron'
 import db from './background/db'
 
-ipcMain.on('db_folderList', (ev, args) => {
+ipcMain.on('db_folderList', (ev) => {
   db.outerListLoad().then(rs => {
     ev.reply('db_folderList_reply', rs)
   })

@@ -1,19 +1,21 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import { FolderListModel } from './models/folder'
 
 Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
     // folderList: Array<FolderModel>()
-    folderList: Array<string>()
+    folderList: Array<FolderListModel>()
   },
   mutations: {
-    addFolderList (state, folderUrl: string) {
-      state.folderList.push(folderUrl)
+    addFolderList (state, folder: FolderListModel) {
+      state.folderList.push(folder)
     },
-    deleteFolderList (state, folderUrl: string) {
-      state.folderList.splice(state.folderList.indexOf(folderUrl), 1)
+    deleteFolderList (state, path: string) {
+      const pathOfFolder = state.folderList.map(item => item.path)
+      state.folderList.splice(pathOfFolder.indexOf(path), 1)
     }
   },
   actions: {
