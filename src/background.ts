@@ -107,7 +107,7 @@ ipcMain.on('db_folderList', (ev) => {
 })
 
 ipcMain.on('db_addFolderList', (ev, args) => {
-  db.reloadFolderOfUrl(args).then((result:any) => {
+  db.insertFolder(args).then((result:any) => {
     ev.reply('db_addFolderList_reply', result)
   }).catch(er => {
     console.log(`folderStructure db set er\n ${er}`)
