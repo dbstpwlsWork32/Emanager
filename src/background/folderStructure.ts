@@ -61,7 +61,7 @@ class GetFolderStructure {
       {
         fileType: 'video',
         isGet: true,
-        regExp: [/MPE?G$|MP(2|E|V)$/i, /ogg$/i, /webm$/i, /m4(p|v)$|mp4$/i, /avi$|wmv$|mov$|qt$|flv$|swf$/i]
+        regExp: [/MPE?G$|MP(2|E|V)$/i, /ogg$/i, /webm$/i, /m4(p|v)$|mp4$/i, /avi$|wmv$|mov$|qt$|flv$|swf$|mkv$/i]
       },
       {
         fileType: 'audio',
@@ -106,8 +106,8 @@ class GetFolderStructure {
   }
 
   promise_readFolderStructure() {
-    const readdir = async (readPath: string, nowDepth: number = 0) => {
-      if (nowDepth >= 15) throw new Error('File size is too larg')
+    const readdir = async (readPath: string, basePath: string) => {
+      if ((readPath.split(path.sep).length - basePath.split(path.sep).length) >= 15) throw new Error('File size is too larg')
 
       let listStrings: string[] = []
       let result: OneDirReadResultAll = { nowPath: readPath, dir: [], file: [], overall: [] }
@@ -123,27 +123,27 @@ class GetFolderStructure {
         let nowStat = await fs.promises.stat(nowPath)
 
         if (nowStat.isDirectory()) {
-          const childDir = await readdir(nowPath, nowDepth++) 
+          const childDir = await readdir(nowPath, basePath)
           result.dir.push(childDir)
 
           // add childFolder overall with nowDir overall
           const childDirOverallArray = {
             type: childDir.overall.map(item => item.type),
-            count : childDir.overall.map(item => item.count)
+            count: childDir.overall.map(item => item.count)
           }
-          const parentDirOverallArray = {
+          let parentDirOverallArray = {
             type: result.overall.map(item => item.type),
             count: result.overall.map(item => item.count)
           }
 
-          let parentChangeArrayIndex:number[] = []
-          childDirOverallArray.type.forEach(type => {
-            const index = parentDirOverallArray.type.indexOf(type)
-            if (index !== -1) {
-              parentChangeArrayIndex.push(index)
-              parentDirOverallArray.count[index] += childDirOverallArray.count[index]
+          let parentChangeArrayIndex: number[] = []
+          childDirOverallArray.type.forEach((type, nowIndex) => {
+            const fIndex = parentDirOverallArray.type.indexOf(type)
+            if (fIndex !== -1) {
+              parentChangeArrayIndex.push(fIndex)
+              parentDirOverallArray.count[fIndex] += childDirOverallArray.count[nowIndex]
             } else {
-              result.overall.push(childDir.overall[index])
+              result.overall.push(childDir.overall[nowIndex])
             }
           })
 
@@ -184,7 +184,7 @@ class GetFolderStructure {
       return result
     }
 
-    return readdir(this.basePath)
+    return readdir(this.basePath, this.basePath)
   }
 }
 

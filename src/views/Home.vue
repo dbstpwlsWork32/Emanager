@@ -49,18 +49,17 @@
           </v-dialog>
         </div>
       </v-col>
-
       <v-col
         v-for="(folder, index) in folderList"
         :key="index"
       >
         <v-card
-          :loading="isFolderLoading[folder.path]"
-          :disabled="isFolderLoading[folder.path]"
+          :loading="folder.isLoading"
+          :disabled="folder.isLoading"
           link
           :to="'/'+folder.path"
         >
-          {{folder.name + isFolderLoading[folder.path]}}
+          {{folder.name}}
         </v-card>
       </v-col>
     </v-row>
@@ -81,7 +80,6 @@ export default Vue.extend({
       isExist: false,
       alertError: ''
     },
-    isFolderLoading: {},
     userInput: {
       url: '',
       name: ''
@@ -96,7 +94,6 @@ export default Vue.extend({
     if (!this.$store.state.folderList.length) {
       ipcRenderer.send('db_folderList')
       ipcRenderer.once('db_folderList_reply', (ev, args) => {
-        console.log(args)
         args.forEach(({ path, name }) => {
           this.$store.commit('addFolderList', { path, name })
         })
@@ -123,21 +120,12 @@ export default Vue.extend({
           this.$data.addClickHandler.isError = false
           this.$data.dialog = false
 
-          this.$store.commit('addFolderList', { name: this.$data.userInput.name, path: this.$data.userInput.url })
-          this.$data.isFolderLoading[this.$data.userInput.url] = true
-
-          ipcRenderer.send('db_addFolderList', { path: this.$data.userInput.url, name: this.$data.userInput.name })
-          ipcRenderer.once('db_addFolderList_reply', (ev, args) => {
-            this.$data.isFolderLoading[this.$data.userInput.url] = false
-            console.log(this.$data.isFolderLoading)
-            if (args) {
-              console.log('success!')
-            } else {
-              this.$store.commit('deleteFolderList', this.$data.userInput.url)
-              console.log('fail...')
-              alert('something is wrong!')
-            }
-          })
+          this.$store.dispatch('addFolderList', { name: this.$data.userInput.name, path: this.$data.userInput.url, isLoading: true })
+            .then(result => {
+              console.log(result)
+              if (result) console.log('success!')
+              else alert('something is wrong!')
+            })
         }
       })
     }
