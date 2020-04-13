@@ -26,21 +26,23 @@ interface SettingGetFile {
 class GetFolderStructure {
   constructor(
     basePath: string,
-    changeDefaultGetFile: {
-      fileType: string,
-      replace: {
-        regExp?: RegExp[];
-        fileType?: string;
-        isGet?: boolean;
-      }
-    }[] = [],
-    getFile: SettingGetFile[] = []
+    userSetting: {
+      changeDefaultGetFile: {
+        fileType: string,
+        replace: {
+          regExp?: RegExp[];
+          fileType?: string;
+          isGet?: boolean;
+        }
+      }[],
+      getFile: SettingGetFile[]
+    } = { changeDefaultGetFile: [], getFile: [] }
   ) {
     this.basePath = basePath
 
     // chagne default setting
-    changeDefaultGetFile.forEach(item => {
-      for (let i=0; i<this.getFile.length; i++) {
+    userSetting.changeDefaultGetFile.forEach(item => {
+      for (let i = 0; i < this.getFile.length; i++) {
         const getFile = this.getFile[i]
         if (getFile.fileType === item.fileType) {
           this.getFile[i] = { ...this.getFile[i], ...item.replace }
@@ -50,7 +52,7 @@ class GetFolderStructure {
     })
 
     // insert user.getFileSetting
-    this.getFile = [...this.getFile, ...getFile]
+    this.getFile = [...this.getFile, ...userSetting.getFile]
   }
 
   private basePath: string
@@ -74,11 +76,11 @@ class GetFolderStructure {
       {
         fileType: 'game',
         isGet: true,
-        regExp: [/swf$|exe$/i]
+        regExp: [/exe$/i]
       }
     ]
 
-  fileTypeCheck (fileName: string): { isGet: boolean, type: string } {
+  fileTypeCheck(fileName: string): { isGet: boolean, type: string } {
     const getFileSetting = this.getFile
 
     let result = {
@@ -103,7 +105,7 @@ class GetFolderStructure {
     return result
   }
 
-  promise_readFolderStructure () {
+  promise_readFolderStructure() {
     const readdir = async (readPath: string) => {
       let listStrings: string[] = []
       let result: OneDirReadResultAll = { nowPath: readPath, dir: [], file: [], overall: [] }
@@ -134,7 +136,7 @@ class GetFolderStructure {
           )
 
           const checkOverall = result.overall.filter(item => item.type === fileTypeResult.type)
-          if (!checkOverall.length) result.overall.push({ type: fileTypeResult.type, count: 1})
+          if (!checkOverall.length) result.overall.push({ type: fileTypeResult.type, count: 1 })
           else {
             result.overall = result.overall.map(item => {
               if (item.type === fileTypeResult.type) ++item.count
@@ -146,7 +148,7 @@ class GetFolderStructure {
             // if game folder, ignore other files except match RegExp as game file
             result.file = [result.file[result.file.length - 1]]
             result.dir = []
-            result.overall = [{type: 'game', count: 1}]
+            result.overall = [{ type: 'game', count: 1 }]
             return result
           }
         }
