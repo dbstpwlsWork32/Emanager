@@ -8,14 +8,15 @@ interface FileResult {
   ctime: Date;
   mtime: Date;
 }
+interface overall {
+  type: string,
+  count: number
+}
 interface OneDirReadResultAll {
   nowPath: string;
-  dir: OneDirReadResultAll[];
+  dir: OneDirReadResultAll[] & string[];
   file: FileResult[];
-  overall: {
-    type: string,
-    count: number
-  }[]
+  overall: overall[]
 }
 interface SettingGetFile {
   regExp: RegExp[];
@@ -23,7 +24,7 @@ interface SettingGetFile {
   isGet: boolean;
 }
 
-class GetFolderStructure {
+class GetDirStructure {
   constructor(
     basePath: string,
     userSetting: {
@@ -105,12 +106,38 @@ class GetFolderStructure {
     return result
   }
 
-  promise_readFolderStructure() {
-    const readdir = async (readPath: string, basePath: string) => {
-      if ((readPath.split(path.sep).length - basePath.split(path.sep).length) >= 15) throw new Error('File size is too larg')
+  promise_readDirStructure(divideAsFolderDepth: boolean = false): Promise<OneDirReadResultAll[]> {
+    const readdir = async (readPath: string, rootPath: string): Promise<OneDirReadResultAll[]> => {
+      const overallAddByDir = (parent: overall[], child: overall[]): overall[] => {
+        let parentMap = {
+          type: parent.map(item => item.type),
+          count: parent.map(item => item.count)
+        }
+
+        child.forEach(item => {
+          const typeIndex = parentMap.type.indexOf(item.type)
+          if (typeIndex !== -1) {
+            parentMap.count[typeIndex] += item.count
+          } else {
+            parentMap.count.push(item.count)
+            parentMap.type.push(item.type)
+          }
+        })
+
+        let overallResult: overall[] = []
+        parentMap.type.forEach((item, index) => {
+          overallResult[index] = {
+            type: item,
+            count: parentMap.count[index]
+          }
+        })
+        return overallResult
+      }
+
+      if ((readPath.split(path.sep).length - rootPath.split(path.sep).length) >= 15) throw new Error('File size is too big')
 
       let listStrings: string[] = []
-      let result: OneDirReadResultAll = { nowPath: readPath, dir: [], file: [], overall: [] }
+      let oneDirReadResult: OneDirReadResultAll = { nowPath: readPath, dir: [], file: [], overall: [] }
 
       try {
         listStrings = await fs.promises.readdir(readPath)
@@ -118,43 +145,16 @@ class GetFolderStructure {
         throw new Error(`first find error ${readPath}\n${err}`)
       }
 
+      const nowDirChildDir = []
       for (const listString of listStrings) {
         let nowPath = path.resolve(readPath, listString)
         let nowStat = await fs.promises.stat(nowPath)
 
-        if (nowStat.isDirectory()) {
-          const childDir = await readdir(nowPath, basePath)
-          result.dir.push(childDir)
-
-          // add childFolder overall with nowDir overall
-          const childDirOverallArray = {
-            type: childDir.overall.map(item => item.type),
-            count: childDir.overall.map(item => item.count)
-          }
-          let parentDirOverallArray = {
-            type: result.overall.map(item => item.type),
-            count: result.overall.map(item => item.count)
-          }
-
-          let parentChangeArrayIndex: number[] = []
-          childDirOverallArray.type.forEach((type, nowIndex) => {
-            const fIndex = parentDirOverallArray.type.indexOf(type)
-            if (fIndex !== -1) {
-              parentChangeArrayIndex.push(fIndex)
-              parentDirOverallArray.count[fIndex] += childDirOverallArray.count[nowIndex]
-            } else {
-              result.overall.push(childDir.overall[nowIndex])
-            }
-          })
-
-          parentChangeArrayIndex.forEach(index => {
-            result.overall[index].count = parentDirOverallArray.count[index]
-          })
-        } else {
+        if (!nowStat.isDirectory()) {
           let fileTypeResult = this.fileTypeCheck(listString)
           if (!fileTypeResult.isGet) continue
 
-          result.file.push(
+          oneDirReadResult.file.push(
             {
               fileName: listString,
               fileType: fileTypeResult.type,
@@ -163,29 +163,105 @@ class GetFolderStructure {
             }
           )
 
-          const checkOverall = result.overall.filter(item => item.type === fileTypeResult.type)
-          if (!checkOverall.length) result.overall.push({ type: fileTypeResult.type, count: 1 })
-          else {
-            result.overall = result.overall.map(item => {
-              if (item.type === fileTypeResult.type) ++item.count
-              return item
-            })
-          }
+          oneDirReadResult.overall = overallAddByDir(oneDirReadResult.overall, [{ type: fileTypeResult.type, count: 1 }])
 
           if (fileTypeResult.type === 'game') {
-            // if game folder, ignore other files except match RegExp as game file
-            result.file = [result.file[result.file.length - 1]]
-            result.dir = []
-            result.overall = [{ type: 'game', count: 1 }]
-            return result
+            // if game Dir, ignore other files except match RegExp as game file
+            oneDirReadResult.file = [oneDirReadResult.file[oneDirReadResult.file.length - 1]]
+            oneDirReadResult.dir = []
+            oneDirReadResult.overall = [{ type: 'game', count: 1 }]
+            return [oneDirReadResult]
           }
+        } else {
+          nowDirChildDir.push(nowPath)
         }
       }
-      return result
+
+      let divideFolderResult: OneDirReadResultAll[] = []
+      for (const childDirPath of nowDirChildDir) {
+        const childDir = await readdir(childDirPath, rootPath)
+        if (divideAsFolderDepth) {
+          oneDirReadResult.dir.push(childDirPath)
+          divideFolderResult.push(...childDir)
+
+          let addAllChildOverall: overall[] = []
+          for (const childDirResult of childDir) {
+            if (childDirResult.nowPath.split(path.sep).length - readPath.split(path.sep).length === 1) {
+              addAllChildOverall = overallAddByDir(childDirResult.overall, addAllChildOverall)
+            }
+          }
+          oneDirReadResult.overall = overallAddByDir(oneDirReadResult.overall, addAllChildOverall)
+        } else {
+          oneDirReadResult.dir.push(...childDir)
+          oneDirReadResult.overall = overallAddByDir(oneDirReadResult.overall, childDir[0].overall)
+        }
+      }
+
+      if (divideAsFolderDepth) return [...divideFolderResult, oneDirReadResult]
+      else return [oneDirReadResult]
     }
 
     return readdir(this.basePath, this.basePath)
   }
 }
 
-export default GetFolderStructure
+export default GetDirStructure
+
+/*
+  this.promise_readDirStructure(divideAsFolderDepth: boolean = false)
+      -1 => result contain all sub directory
+
+  EX)
+    READ_ROOTFOLDER/
+      /a
+      /b
+        /c
+
+    divideAsFolderDepth === false (default)
+    =>
+    [{
+        ...,
+        dir: [
+          {
+            ...,
+            nowPath: '/a',
+            dir: []
+          },
+          {
+            ...,
+            nowPath: '/b',
+            dir: [
+              {
+                ...,
+                nowPath: '/b/c'
+              }
+            ]
+          },
+        ]
+      }
+    ]
+
+    divideAsFolderDepth === true
+    =>
+    [
+      {
+        ...,
+        dir: [{nowPath: '/a'}, {nowPath: '/b'}]
+      },
+      {
+        ...,
+        nowPath: '/a'
+        dir: []
+      },
+      {
+        ...,
+        nowPath: '/b',
+        dir: [{nowPath: '/b/c'}]
+      },
+      {
+        ...,
+        nowPath: '/b/c'
+        dir: []
+      }
+    ]
+*/
