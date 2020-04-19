@@ -50,7 +50,7 @@
         </div>
       </v-col>
       <v-col
-        v-for="(folder, index) in folderList"
+        v-for="(folder, index) in parentDirList"
         :key="index"
       >
         <v-card
@@ -68,36 +68,32 @@
 
 <script>
 import Vue from 'vue'
-import { ipcRenderer } from 'electron'
 import fs from 'fs'
 
 export default Vue.extend({
   name: 'Home',
-  data: () => ({
-    dialog: false,
-    addClickHandler: {
-      isError: false,
-      isExist: false,
-      alertError: ''
-    },
-    userInput: {
-      url: '',
-      name: ''
+  data () {
+    return {
+      dialog: false,
+      addClickHandler: {
+        isError: false,
+        isExist: false,
+        alertError: ''
+      },
+      userInput: {
+        url: '',
+        name: ''
+      }
     }
-  }),
+  },
   computed: {
-    folderList () {
-      return this.$store.state.folderList
+    parentDirList () {
+      return this.$store.state.parentDir.list
     }
   },
   created () {
-    if (!this.$store.state.folderList.length) {
-      ipcRenderer.send('db_folderList')
-      ipcRenderer.once('db_folderList_reply', (ev, args) => {
-        args.forEach(({ path, name }) => {
-          this.$store.commit('addFolderList', { path, name })
-        })
-      })
+    if (!this.parentDirList.length) {
+      this.$store.dispatch('parentDir/load')
     }
   },
   methods: {
@@ -105,29 +101,28 @@ export default Vue.extend({
       if (!this.$data.userInput.url || !this.$data.userInput.name) {
         this.$data.addClickHandler.isError = true
         this.$data.addClickHandler.alertError = 'please write all form'
-        return
+      } else {
+        fs.access(this.$data.userInput.url, er => {
+          const pathOfFolder = this.parentDirList.map(item => item.path)
+          if (er) {
+            this.$data.addClickHandler.isError = true
+            this.$data.addClickHandler.alertError = 'Can\'t Find Folder'
+          } else if (pathOfFolder.includes(this.$data.userInput.url)) {
+            this.$data.addClickHandler.isError = true
+            this.$data.addClickHandler.alertError = 'Already Exist Folder'
+          } else {
+            this.$data.addClickHandler.isError = false
+            this.$data.dialog = false
+
+            this.$store.dispatch('parentDir/add', { name: this.$data.userInput.name, path: this.$data.userInput.url, isLoading: true })
+              .then(result => {
+                console.log(result)
+                if (result) console.log('success!')
+                else alert('something is wrong!')
+              })
+          }
+        })
       }
-
-      fs.access(this.$data.userInput.url, er => {
-        const pathOfFolder = this.$store.state.folderList.map(item => item.path)
-        if (er) {
-          this.$data.addClickHandler.isError = true
-          this.$data.addClickHandler.alertError = 'Can\'t Find Folder'
-        } else if (pathOfFolder.includes(this.$data.userInput.url)) {
-          this.$data.addClickHandler.isError = true
-          this.$data.addClickHandler.alertError = 'Already Exist Folder'
-        } else {
-          this.$data.addClickHandler.isError = false
-          this.$data.dialog = false
-
-          this.$store.dispatch('addFolderList', { name: this.$data.userInput.name, path: this.$data.userInput.url, isLoading: true })
-            .then(result => {
-              console.log(result)
-              if (result) console.log('success!')
-              else alert('something is wrong!')
-            })
-        }
-      })
     }
   }
 })

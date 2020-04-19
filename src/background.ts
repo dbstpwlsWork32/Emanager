@@ -98,18 +98,18 @@ if (isDevelopment) {
 
 // ================ set ipc protocol
 import { ipcMain } from 'electron'
-import db from './background/db'
+import dbTask from './background/db'
 
-ipcMain.on('db_folderList', (ev) => {
-  db.outerListLoad().then(rs => {
-    ev.reply('db_folderList_reply', rs)
+ipcMain.on('db_parentDirListLoad', (ev) => {
+  dbTask.parentDirListLoad().then(rs => {
+    ev.reply('db_parentDirListLoad_reply', rs)
   })
 })
 
-ipcMain.on('db_addFolderList', (ev, args) => {
-  db.insertFolder(args).then((result:any) => {
-    ev.reply('db_addFolderList_reply', result)
+ipcMain.on('db_insertDir', (ev, args) => {
+  dbTask.insertDirByPath(args).then((result:any) => {
+    ev.reply('db_addDirList_reply', result)
   }).catch(er => {
-    console.log(`folderStructure db set er\n ${er}`)
+    console.log(`DirStructure db set er\n ${er}`)
   })
 })

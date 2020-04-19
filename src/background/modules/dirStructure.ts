@@ -264,4 +264,7 @@ export default GetDirStructure
         dir: []
       }
     ]
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // root dir result always place last item of result array
 */
