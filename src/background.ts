@@ -99,6 +99,7 @@ if (isDevelopment) {
 // ================ set ipc protocol
 import { ipcMain } from 'electron'
 import dbTask from './background/db'
+import { ChildDirModel } from './background/models/directory'
 
 ipcMain.on('db_parentDirListLoad', (ev) => {
   dbTask.parentDirListLoad().then(rs => {
@@ -107,9 +108,19 @@ ipcMain.on('db_parentDirListLoad', (ev) => {
 })
 
 ipcMain.on('db_insertDir', (ev, args) => {
-  dbTask.insertDirByPath(args).then((result:any) => {
-    ev.reply('db_addDirList_reply', result)
-  }).catch(er => {
+  ev.reply('db_insertDir_reply-setStructure')
+  dbTask.findDirStructure(args).then((result: ChildDirModel[]) => {
+    return result
+  })
+  .then((result: ChildDirModel[]) => {
+    ev.reply('db_insertDir_reply-insertDb')
+    return dbTask.insertChildDb(result)
+  })
+  .then(() => {
+    ev.reply('db_insertDir_reply', true)
+  })
+  .catch(er => {
     console.log(`DirStructure db set er\n ${er}`)
+    ev.reply('db_insertDir_reply', false)
   })
 })

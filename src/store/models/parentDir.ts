@@ -37,25 +37,29 @@ const parentDir: Module<ParnetDirState, {}> = {
   actions: {
     load ({ commit }) {
       ipcRenderer.send('db_parentDirListLoad')
-      ipcRenderer.once('db_parentDirListLoadreply', (ev, args: ParentDirListModel[]) => {
+      ipcRenderer.once('db_parentDirListLoad_reply', (ev, args: ParentDirListModel[]) => {
         args.forEach(item => {
           commit('add', item)
         })
       })
     },
     add ({ commit }, { name, path, isLoading }) {
-      commit('add', { name, path, isLoading })
+      commit('add', { name, path, isLoading, process: { status: true, text: 'start' } })
 
       ipcRenderer.send('db_insertDir', { path, name })
       return new Promise(resolve => {
-        ipcRenderer.once('db_insertDir_reply', (ev, args) => {
-          if (args) {
-            commit('modifyByPath', { path, replace: { isLoading: false } })
-            console.log('success!')
+        ipcRenderer.once('db_insertDir_reply-setStructure', () => {
+          commit('modifyByPath', { path, replace: { process: 'setting structure...' } })
+        })
+        ipcRenderer.once('db_insertDir_reply-insertDb', () => {
+          commit('modifyByPath', { path, replace: { process: 'insert at db...' } })
+        })
+        ipcRenderer.once('db_insertDir_reply', (ev, status) => {
+          if (status) {
+            commit('modifyByPath', { path, replace: { isLoading: false, process: '' } })
             resolve(true)
           } else {
             commit('deleteByPath', path)
-            console.log('fail...')
             resolve(false)
           }
         })

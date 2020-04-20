@@ -10,14 +10,15 @@ export interface ChildDirModel {
   overall: {
     type: string,
     count: number
-  }[]
-  name: string
+  }[];
+  name?: string
 }
 
 export interface ParentDirModel {
   name: string;
   path: string;
   subDir: string[];
+  process?: string
 }
 
 // https://typescript-kr.github.io/pages/Classes.html

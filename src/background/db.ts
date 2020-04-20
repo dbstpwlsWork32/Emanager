@@ -21,7 +21,7 @@ export default {
       })
     })
   },
-  async insertDirByPath (args: {path: string, name: string}): Promise<boolean> {
+  async findDirStructure (args: {path: string, name: string}): Promise<ChildDirModel[]> {
     try {
       const { path, name } = args
 
@@ -38,23 +38,24 @@ export default {
           else reject(er)
         })
       })
-
-      // childDirList insert
-      for (const nowDirField of dirStructureResult) {
-        await new Promise((resolve, reject) => {
-          const { nowPath, dir, file, overall } = nowDirField
-          const nowFieldDataModel = { nowPath, dir, file, overall }
-          db.childDirList.insert(nowFieldDataModel, (er: NodeJS.ErrnoException) => {
-            if (!er) resolve()
-            else reject(er)
-          })
-        })
-      }
-
-      return true
+      
+      return dirStructureResult
     } catch (er) {
       console.log(`error db.inertDir, \n ${er}`)
       throw er
+    }
+  },
+  async insertChildDb (dirStructureResult: ChildDirModel[]) {
+    // childDirList insert
+    for (const nowDirField of dirStructureResult) {
+      await new Promise((resolve, reject) => {
+        const { nowPath, dir, file, overall } = nowDirField
+        const nowFieldDataModel = { nowPath, dir, file, overall }
+        db.childDirList.insert(nowFieldDataModel, (er: NodeJS.ErrnoException) => {
+          if (!er) resolve()
+          else reject(er)
+        })
+      })
     }
   }
 }

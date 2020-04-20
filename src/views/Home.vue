@@ -60,6 +60,7 @@
           :to="'/'+folder.path"
         >
           {{folder.name}}
+          {{folder.process}}
         </v-card>
       </v-col>
     </v-row>
@@ -116,9 +117,7 @@ export default Vue.extend({
 
             this.$store.dispatch('parentDir/add', { name: this.$data.userInput.name, path: this.$data.userInput.url, isLoading: true })
               .then(result => {
-                console.log(result)
-                if (result) console.log('success!')
-                else alert('something is wrong!')
+                if (!result) alert('something is wrong!')
               })
           }
         })
