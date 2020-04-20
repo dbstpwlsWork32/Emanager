@@ -50,18 +50,15 @@
         </div>
       </v-col>
       <v-col
-        v-for="(folder, index) in parentDirList"
+        v-for="(dir, index) in parentDirList"
         :key="index"
       >
-        <v-card
-          :loading="folder.isLoading"
-          :disabled="folder.isLoading"
-          link
-          :to="'/'+folder.nowPath"
-        >
-          {{folder.name}}
-          {{folder.process}}
-        </v-card>
+        <dirCard
+          :name="dir.name"
+          :nowPath="dir.nowPath"
+          :process="dir.process"
+          :isLoading="dir.isLoading"
+        ></dirCard>
       </v-col>
     </v-row>
   </v-container>
@@ -70,6 +67,7 @@
 <script>
 import Vue from 'vue'
 import fs from 'fs'
+import comDirCard from '@/components/dirCard'
 
 export default Vue.extend({
   name: 'Home',
@@ -127,6 +125,9 @@ export default Vue.extend({
         })
       }
     }
+  },
+  components: {
+    dirCard: comDirCard
   }
 })
 </script>
