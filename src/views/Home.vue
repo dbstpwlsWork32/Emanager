@@ -57,7 +57,7 @@
           :loading="folder.isLoading"
           :disabled="folder.isLoading"
           link
-          :to="'/'+folder.path"
+          :to="'/'+folder.nowPath"
         >
           {{folder.name}}
           {{folder.process}}
@@ -104,18 +104,22 @@ export default Vue.extend({
         this.$data.addClickHandler.alertError = 'please write all form'
       } else {
         fs.access(this.$data.userInput.url, er => {
-          const pathOfFolder = this.parentDirList.map(item => item.path)
+          const matchOfPathList = this.parentDirList.map(item => item.nowPath).filter(item => {
+            const replace = item.replace(/[^\w\s]/g, '\\$&')
+            return this.$data.userInput.url.match(new RegExp('^' + replace))
+          })
+          const matchOfNameList = this.parentDirList.map(item => item.name).filter(item => item.match(this.$data.userInput.name))
           if (er) {
             this.$data.addClickHandler.isError = true
             this.$data.addClickHandler.alertError = 'Can\'t Find Folder'
-          } else if (pathOfFolder.includes(this.$data.userInput.url)) {
+          } else if (matchOfPathList.length > 0 || matchOfNameList.length > 0) {
             this.$data.addClickHandler.isError = true
-            this.$data.addClickHandler.alertError = 'Already Exist Folder'
+            this.$data.addClickHandler.alertError = (matchOfPathList.length > 0) ? 'Already Exist Folder' : 'Already Exist name'
           } else {
             this.$data.addClickHandler.isError = false
             this.$data.dialog = false
 
-            this.$store.dispatch('parentDir/add', { name: this.$data.userInput.name, path: this.$data.userInput.url, isLoading: true })
+            this.$store.dispatch('parentDir/add', { name: this.$data.userInput.name, nowPath: this.$data.userInput.url, isLoading: true })
               .then(result => {
                 if (!result) alert('something is wrong!')
               })

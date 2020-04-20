@@ -21,17 +21,17 @@ export default {
       })
     })
   },
-  async findDirStructure (args: {path: string, name: string}): Promise<ChildDirModel[]> {
+  async findDirStructure (args: {nowPath: string, name: string}): Promise<ChildDirModel[]> {
     try {
-      const { path, name } = args
+      const { nowPath, name } = args
 
       // sub dir structure find and update
-      const dirStructureFinder = new GetDirStructure(path)
+      const dirStructureFinder = new GetDirStructure(nowPath)
       let dirStructureResult = await dirStructureFinder.promise_readDirStructure(true)
 
       // parentDirList insert
       const [parentDirResult] = dirStructureResult.splice(dirStructureResult.length-1, 1) // root dir result always place last item of result array
-      const parentDir: ParentDirModel = { path, name, subDir: parentDirResult.dir }
+      const parentDir: ParentDirModel = { nowPath, name, overall: parentDirResult.overall }
       await new Promise((resolve, reject) => {
         db.parentDirList.insert(parentDir, (er: NodeJS.ErrnoException) => {
           if (!er) resolve()

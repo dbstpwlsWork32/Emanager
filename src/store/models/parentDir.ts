@@ -21,14 +21,14 @@ const parentDir: Module<ParnetDirState, {}> = {
     add (state, parentDir: ParentDirListModel) {
       state.list.push(parentDir)
     },
-    deleteByPath (state, path: string) {
-      const dirPaths = state.list.map(item => item.path)
-      const findDirByPath = dirPaths.indexOf(path)
+    deleteByPath (state, nowPath: string) {
+      const dirPaths = state.list.map(item => item.nowPath)
+      const findDirByPath = dirPaths.indexOf(nowPath)
       if (findDirByPath !== -1) state.list.splice(findDirByPath, 1)
     },
-    modifyByPath <T extends ParentDirListModel> (state: ParnetDirState, { path, replace }: { path: string; replace: T }) {
-      const dirPaths = state.list.map(item => item.path)
-      const findDirByPath = dirPaths.indexOf(path)
+    modifyByPath<T extends ParentDirListModel> (state: ParnetDirState, { nowPath, replace }: { nowPath: string; replace: T }) {
+      const dirPaths = state.list.map(item => item.nowPath)
+      const findDirByPath = dirPaths.indexOf(nowPath)
       if (findDirByPath !== -1) {
         state.list[findDirByPath] = Object.assign(state.list[findDirByPath], replace)
       }
@@ -43,23 +43,23 @@ const parentDir: Module<ParnetDirState, {}> = {
         })
       })
     },
-    add ({ commit }, { name, path, isLoading }) {
-      commit('add', { name, path, isLoading, process: { status: true, text: 'start' } })
+    add ({ commit }, { name, nowPath, isLoading }) {
+      commit('add', { name, nowPath, isLoading, process: 'start' })
 
-      ipcRenderer.send('db_insertDir', { path, name })
+      ipcRenderer.send('db_insertDir', { nowPath, name })
       return new Promise(resolve => {
         ipcRenderer.once('db_insertDir_reply-setStructure', () => {
-          commit('modifyByPath', { path, replace: { process: 'setting structure...' } })
+          commit('modifyByPath', { nowPath, replace: { process: 'setting structure...' } })
         })
         ipcRenderer.once('db_insertDir_reply-insertDb', () => {
-          commit('modifyByPath', { path, replace: { process: 'insert at db...' } })
+          commit('modifyByPath', { nowPath, replace: { process: 'insert at db...' } })
         })
         ipcRenderer.once('db_insertDir_reply', (ev, status) => {
           if (status) {
-            commit('modifyByPath', { path, replace: { isLoading: false, process: '' } })
+            commit('modifyByPath', { nowPath, replace: { isLoading: false, process: '' } })
             resolve(true)
           } else {
-            commit('deleteByPath', path)
+            commit('deleteByPath', nowPath)
             resolve(false)
           }
         })

@@ -1,5 +1,17 @@
-export interface ChildDirModel {
+export interface DirBaseModel {
   nowPath: string;
+  overall: {
+    type: string,
+    count: number
+  }[];
+}
+
+export interface ParentDirModel extends DirBaseModel {
+  name: string;
+  process?: string;
+}
+
+export interface ChildDirModel extends DirBaseModel {
   dir: string[];
   file: {
     fileName: string;
@@ -7,18 +19,6 @@ export interface ChildDirModel {
     ctime: Date;
     mtime: Date;
   }[];
-  overall: {
-    type: string,
-    count: number
-  }[];
-  name?: string
-}
-
-export interface ParentDirModel {
-  name: string;
-  path: string;
-  subDir: string[];
-  process?: string
 }
 
 // https://typescript-kr.github.io/pages/Classes.html
