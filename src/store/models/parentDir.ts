@@ -4,6 +4,8 @@ import { ParentDirModel } from '@/background/models/directory'
 
 interface ParentDirListModel extends ParentDirModel {
   isLoading: boolean;
+  process: string;
+  _id: string;
 }
 
 interface ParnetDirState {
@@ -44,25 +46,38 @@ const parentDir: Module<ParnetDirState, {}> = {
       })
     },
     add ({ commit }, { name, nowPath, isLoading }) {
-      commit('add', { name, nowPath, isLoading, process: 'start' })
+      commit('add', { name, nowPath, isLoading, process: 'start', overall: [], _id: '' })
 
       ipcRenderer.send('db_insertDir', { nowPath, name })
-      return new Promise(resolve => {
+      return new Promise((resolve, reject) => {
         ipcRenderer.once('db_insertDir_reply-setStructure', () => {
-          commit('modifyByPath', { nowPath, replace: { process: 'setting structure...' } })
+          commit('modifyByPath', { nowPath, replace: { process: 'set structure...' } })
         })
         ipcRenderer.once('db_insertDir_reply-insertDb', () => {
           commit('modifyByPath', { nowPath, replace: { process: 'insert at db...' } })
         })
-        ipcRenderer.once('db_insertDir_reply', (ev, status) => {
-          if (status) {
-            commit('modifyByPath', { nowPath, replace: { isLoading: false, process: '' } })
-            resolve(true)
+        ipcRenderer.once('db_insertDir_reply', (ev, result) => {
+          if (result) {
+            resolve()
           } else {
             commit('deleteByPath', nowPath)
-            resolve(false)
+            reject(new Error('db insert error'))
           }
         })
+      }).then(() => {
+        return new Promise((resolve, reject) => {
+          ipcRenderer.send('db_find_parent', { nowPath })
+          ipcRenderer.once('db_find_parent', (ev, result) => {
+            if (result === false) {
+              reject(new Error('db find error'))
+            } else {
+              commit('modifyByPath', { nowPath, replace: { isLoading: false, process: '', _id: result[0]._id, overall: result[0].overall } })
+              resolve(true)
+            }
+          })
+        })
+      }).catch(er => {
+        throw new Error(`add dir : \n${er}`)
       })
     }
   }

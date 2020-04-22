@@ -1,73 +1,74 @@
 <template>
-  <v-container class="l__home flex-wrap">
-    <v-row>
-      <v-col>
-        <div class="b__folder-card">
-          <v-dialog v-model="dialog" width="500px" content-class="l__home_dialog">
-            <template v-slot:activator="{ on }">
-              <v-btn
-                text
-                v-on="on"
-                class="b__folder-card_addFolder-open"
-                color="#fff"
-              >
-                <v-icon>mdi-plus</v-icon>
-              </v-btn>
-            </template>
-            <v-card>
-              <v-card-title>Add Folder</v-card-title>
-              <v-card-text>
-                <v-text-field
-                  label="Folder Url"
-                  v-model="userInput.url"
-                ></v-text-field>
-                <v-text-field
-                  label="naming"
-                  v-model="userInput.name"
-                ></v-text-field>
-                <v-btn color="primary" class="addBt" v-on:click="addFolderList()">
-                  <v-icon>mdi-plus</v-icon>
-                </v-btn>
-              </v-card-text>
-              <transition name="fade">
-                <v-alert
-                  type="error"
-                  class="alert-error"
-                  dense
-                  v-if="addClickHandler.isError"
-                >{{addClickHandler.alertError}}</v-alert>
-              </transition>
-              <v-btn
-                class="close"
-                text
-                background-color="#1976d2"
-                @click="dialog = false"
-              >
-                <v-icon>mdi-close</v-icon>
-              </v-btn>
-            </v-card>
-          </v-dialog>
-        </div>
-      </v-col>
-      <v-col
-        v-for="(dir, index) in parentDirList"
-        :key="index"
-      >
-        <dirCard
-          :name="dir.name"
-          :nowPath="dir.nowPath"
-          :process="dir.process"
-          :isLoading="dir.isLoading"
-        ></dirCard>
-      </v-col>
-    </v-row>
-  </v-container>
+  <v-row class="l__home">
+    <div class="b__dir-card" style="width:130px;height:130px">
+      <v-dialog v-model="dialog" width="500px" content-class="l__home_dialog">
+        <template v-slot:activator="{ on }">
+          <v-btn
+            text
+            v-on="on"
+            class="b__dir-card_addDir-open"
+            color="#fff"
+            style="height: 100%"
+          >
+            <v-icon>mdi-plus</v-icon>
+          </v-btn>
+        </template>
+        <v-card>
+          <v-card-title>Add Folder</v-card-title>
+          <v-card-text>
+            <v-text-field
+              label="Folder Url"
+              v-model="userInput.url"
+            ></v-text-field>
+            <v-text-field
+              label="root nick name"
+              v-model="userInput.name"
+            ></v-text-field>
+            <v-btn color="primary" class="addBt" v-on:click="addFolderList()">
+              <v-icon>mdi-plus</v-icon>
+            </v-btn>
+          </v-card-text>
+          <transition name="fade">
+            <v-alert
+              type="error"
+              class="alert-error"
+              dense
+              v-if="addClickHandler.isError"
+            >{{addClickHandler.alertError}}</v-alert>
+          </transition>
+          <v-btn
+            class="close"
+            text
+            background-color="#1976d2"
+            @click="dialog = false"
+          >
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card>
+      </v-dialog>
+    </div>
+    <div
+      class="b__dir-card"
+      v-for="(dir, index) in parentDirList"
+      :key="index"
+    >
+      <dirCard
+        :name="dir.name"
+        :id="dir._id"
+        :nowPath="dir.nowPath"
+        :process="dir.process"
+        :isLoading="dir.isLoading"
+        :overall="dir.overall"
+        :rate="{show: false}"
+      ></dirCard>
+    </div>
+  </v-row>
 </template>
 
 <script>
 import Vue from 'vue'
 import fs from 'fs'
-import comDirCard from '@/components/dirCard'
+import comDirCard from '@/components/dirCard/dir'
 
 export default Vue.extend({
   name: 'Home',
@@ -112,7 +113,7 @@ export default Vue.extend({
             this.$data.addClickHandler.alertError = 'Can\'t Find Folder'
           } else if (matchOfPathList.length > 0 || matchOfNameList.length > 0) {
             this.$data.addClickHandler.isError = true
-            this.$data.addClickHandler.alertError = (matchOfPathList.length > 0) ? 'Already Exist Folder' : 'Already Exist name'
+            this.$data.addClickHandler.alertError = (matchOfPathList.length > 0) ? 'Already Exist Folder' : 'Already Exist root nick name'
           } else {
             this.$data.addClickHandler.isError = false
             this.$data.dialog = false
@@ -145,10 +146,4 @@ export default Vue.extend({
         position: absolute
         right: 0
         top: 0
-
-  .b__folder-card
-    flex-basis: 200px !important
-    &_addFolder-open
-      width: 100%
-      border: 1px dashed #fff
 </style>

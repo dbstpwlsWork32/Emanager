@@ -8,7 +8,6 @@ export interface DirBaseModel {
 
 export interface ParentDirModel extends DirBaseModel {
   name: string;
-  process?: string;
 }
 
 export interface ChildDirModel extends DirBaseModel {
@@ -19,6 +18,7 @@ export interface ChildDirModel extends DirBaseModel {
     ctime: Date;
     mtime: Date;
   }[];
+  rate: number;
 }
 
 // https://typescript-kr.github.io/pages/Classes.html

@@ -124,3 +124,13 @@ ipcMain.on('db_insertDir', (ev, args) => {
     ev.reply('db_insertDir_reply', false)
   })
 })
+
+ipcMain.on('db_find_parent', (ev, args) => {
+  dbTask.findAtParentDb(args).then(result => {
+    ev.reply('db_find_parent', result)
+  })
+    .catch(er => {
+      console.log(`find er query : ${args}\n${er}`)
+      ev.reply('db_find_parent', false)
+    })
+})

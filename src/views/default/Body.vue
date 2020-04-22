@@ -1,6 +1,10 @@
 <template>
   <v-content id="body">
-    <router-view></router-view>
+    <v-container
+      fluid
+    >
+      <router-view></router-view>
+    </v-container>
   </v-content>
 </template>
 

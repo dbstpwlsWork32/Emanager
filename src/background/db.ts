@@ -39,7 +39,7 @@ export default {
         })
       })
       
-      return dirStructureResult
+      return dirStructureResult.map(item => { return { ...item, rate: 0 } })
     } catch (er) {
       console.log(`error db.inertDir, \n ${er}`)
       throw er
@@ -52,10 +52,18 @@ export default {
         const { nowPath, dir, file, overall } = nowDirField
         const nowFieldDataModel = { nowPath, dir, file, overall }
         db.childDirList.insert(nowFieldDataModel, (er: NodeJS.ErrnoException) => {
-          if (!er) resolve()
+          if (!er) resolve(true)
           else reject(er)
         })
       })
     }
+  },
+  async findAtParentDb (query: any) {
+    return await new Promise((resolve, reject) => {
+      db.parentDirList.find(query, (er: NodeJS.ErrnoException, docs: Nedb[]) => {
+        if (!er) resolve(docs)
+        else reject(er)
+      })
+    })
   }
 }
