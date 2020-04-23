@@ -8,6 +8,12 @@ export interface DirBaseModel {
 
 export interface ParentDirModel extends DirBaseModel {
   name: string;
+  file: {
+    fileName: string;
+    fileType: string;
+    ctime: Date;
+    mtime: Date;
+  }[];
 }
 
 export interface ChildDirModel extends DirBaseModel {

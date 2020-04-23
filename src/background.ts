@@ -111,8 +111,8 @@ ipcMain.on('db_firstInsert-dir', async (ev, args) => {
     const dirStructureResult = await dirStructureFinder.promise_readDirStructure(true)
 
     // insert at parentDirTable
-    const parentDirResult = dirStructureResult[dirStructureResult.length - 1] // root dir result always place last item of result array
-    const { _id: parentTableId } = await dbTask.parentTable.insert({ nowPath, name, overall: parentDirResult.overall })
+    const [parentDirResult] = dirStructureResult.splice(dirStructureResult.length - 1, 1) // root dir result always place last item of result array
+    const { _id: parentTableId } = await dbTask.parentTable.insert({ nowPath, name, overall: parentDirResult.overall, file: parentDirResult.file })
 
     // default rate setting
     const dirStructureResultOveray = dirStructureResult.map(item => { return { ...item, rate: 0 } })
