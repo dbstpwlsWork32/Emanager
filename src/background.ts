@@ -98,39 +98,56 @@ if (isDevelopment) {
 
 // ================ set ipc protocol
 import { ipcMain } from 'electron'
-import dbTask from './background/db'
-import { ChildDirModel } from './background/models/directory'
+import dbTask from './database/db'
+import GetDirStructure from './database/modules/dirStructure'
 
-ipcMain.on('db_parentDirListLoad', (ev) => {
-  dbTask.parentDirListLoad().then(rs => {
-    ev.reply('db_parentDirListLoad_reply', rs)
-  })
-})
+ipcMain.on('db_firstInsert-dir', async (ev, args) => {
+  try {
+    ev.reply('db_firstInsert-dir_reply-setStructure')
+    const { nowPath, name } = args
 
-ipcMain.on('db_insertDir', (ev, args) => {
-  ev.reply('db_insertDir_reply-setStructure')
-  dbTask.findDirStructure(args).then((result: ChildDirModel[]) => {
-    return result
-  })
-  .then((result: ChildDirModel[]) => {
-    ev.reply('db_insertDir_reply-insertDb')
-    return dbTask.insertChildDb(result)
-  })
-  .then(() => {
-    ev.reply('db_insertDir_reply', true)
-  })
-  .catch(er => {
-    console.log(`DirStructure db set er\n ${er}`)
-    ev.reply('db_insertDir_reply', false)
-  })
+    // sub dir structure find
+    const dirStructureFinder = new GetDirStructure(nowPath)
+    const dirStructureResult = await dirStructureFinder.promise_readDirStructure(true)
+
+    // insert at parentDirTable
+    const parentDirResult = dirStructureResult[dirStructureResult.length - 1] // root dir result always place last item of result array
+    const { _id: parentTableId } = await dbTask.parentTable.insert({ nowPath, name, overall: parentDirResult.overall })
+
+    // default rate setting
+    const dirStructureResultOveray = dirStructureResult.map(item => { return { ...item, rate: 0 } })
+
+    // set new child table and insert
+    ev.reply('db_firstInsert-dir_reply-insertDb')
+    await dbTask.childTable.ready(parentTableId)
+    await dbTask.childTable.insert(parentTableId, dirStructureResultOveray)
+
+    ev.reply('db_firstInsert-dir_reply', true)
+  } catch (er) {
+    console.log(`ipc : db_firstInsert-dir error\n ${er}`)
+    ev.reply('db_firstInsert-dir_reply', false)
+  }
 })
 
 ipcMain.on('db_find_parent', (ev, args) => {
-  dbTask.findAtParentDb(args).then(result => {
+  dbTask.parentTable.find(args).then(result => {
     ev.reply('db_find_parent', result)
   })
     .catch(er => {
-      console.log(`find er query : ${args}\n${er}`)
+      console.log(`ipc : db_find_parent ERROR query : ${args}\n${er}`)
       ev.reply('db_find_parent', false)
+    })
+})
+
+ipcMain.on('db_find_child', (ev, { parentId, query }) => {
+  dbTask.childTable.ready(parentId)
+  .then(() => {
+    dbTask.childTable.find(parentId, query).then(result => {
+      ev.reply('db_find_child', result)
+    })
+  })
+    .catch(er => {
+      console.log(`ipc : db_find_child ERROR parentID ${parentId} query : ${query}\n${er}`)
+      ev.reply('db_find_child', false)
     })
 })
