@@ -64,9 +64,7 @@ export default Vue.extend({
     dir: {
       type: Object,
       required: true
-    },
-    user: Object,
-    tableId: String
+    }
   },
   data () {
     return {
@@ -97,16 +95,14 @@ export default Vue.extend({
   computed: {
     userHandle () {
       const defaultValue = {
-        rate: 0,
-        views: 11
+        rate: 0
       }
 
       for (const key in defaultValue) {
-        if (key in this.user) {
-          defaultValue[key] = this.user[key]
+        if (key in this.dir.user) {
+          defaultValue[key] = this.dir.user[key]
         }
       }
-
       return defaultValue
     }
   }

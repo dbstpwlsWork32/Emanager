@@ -52,8 +52,6 @@
     >
       <dirCard
         :dir="dir"
-        :user="dir.user"
-        :tableId="dir.tableId"
         :linkPrepend="`parent/${dir.tableId}`"
         :key = index
       ></dirCard>

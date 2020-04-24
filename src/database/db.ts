@@ -1,7 +1,7 @@
 /* eslint-disable */
 import Datastore from 'nedb'
 // models
-import { DirDocumentModel, RootTableModel, NEDBRootTable } from './models/directory'
+import { DirDocumentModel, RootTableModel, NEDBRootTable, NEDBDirDocument } from './models/directory'
 import { app } from 'electron'
 import path from 'path'
 
@@ -23,9 +23,9 @@ const parentTable = {
       })
     })
   },
-  async find(query: any = {}) {
+  async find(query: any = {}): Promise<NEDBRootTable[]> {
     return await new Promise((resolve, reject) => {
-      db.rootTable.find(query, (er: NodeJS.ErrnoException, docs: Nedb[]) => {
+      db.rootTable.find(query, (er: NodeJS.ErrnoException, docs: NEDBRootTable[]) => {
         if (!er) resolve(docs)
         else reject(er)
       })
@@ -63,14 +63,14 @@ const childTable = {
 
     return docResult
   },
-  async find(parentTableId: string, query: any = {}, addtional: any = []) {
+  async find(parentTableId: string, query: any = {}, addtional: any = []): Promise<NEDBDirDocument[]> {
     return await new Promise((resolve, reject) => {
       let nowTask = db[parentTableId].table.find(query)
       for (const cbObj of addtional) {
         const [cbKey] = Object.keys(cbObj)
         nowTask = nowTask[cbKey](cbObj[cbKey])
       }
-      nowTask.exec((er: NodeJS.ErrnoException, docs: Nedb[]) => {
+      nowTask.exec((er: NodeJS.ErrnoException, docs: NEDBDirDocument[]) => {
         if (!er) resolve(docs)
         else reject(er)
       })

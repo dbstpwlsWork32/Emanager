@@ -24,4 +24,7 @@ export interface NEDBRootTable extends RootTableModel {
   _id: string
 }
 
+export interface NEDBDirDocument extends DirDocumentModel {
+}
+
 // https://typescript-kr.github.io/pages/Classes.html

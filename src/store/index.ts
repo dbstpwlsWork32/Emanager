@@ -45,31 +45,25 @@ export default new Vuex.Store({
     }
   },
   actions: {
-    load ({ commit }) {
-      ipcRenderer.send('db_find_parent', {})
-
-      new Promise((resolve) => {
-        ipcRenderer.once('db_find_parent', (ev, args: NEDBRootTable[]) => {
-          resolve(args)
-        })
-        // eslint-disable-next-line
-      }).then(async (result: any) => {
-        for (const item of result) {
-          ipcRenderer.send('db_find_child', { _id: item._id, query: { isRoot: true } })
-
-          const [nowTableRoot] = await new Promise((resolve) => {
-            ipcRenderer.once('db_find_child', (ev, args) => {
-              resolve(args)
+    async load ({ commit, state }) {
+      try {
+        if (state.rootTableList.length === 0) {
+          ipcRenderer.send('db_first-loading', {})
+          const rootTableList: any = await new Promise((resolve) => {
+            ipcRenderer.once('db_first-loading', (ev, result) => {
+              resolve(result)
             })
           })
 
-          // eslint-disable-next-line
-          commit('add', { ...nowTableRoot, tableId: item._id })
+          for (const nowTableRoot of rootTableList) {
+            // eslint-disable-next-line
+            commit('add', { ...nowTableRoot })
+          }
           commit('changeIsAllLoad', true)
         }
-      }).catch(er => {
-        console.log(`actions.load error\n ${er}`)
-      })
+      } catch (er) {
+        throw `actions.load error\n ${er}`
+      }
     },
     async add ({ commit }, { name, nowPath, isLoading }) {
       commit('changeIsAllLoad', false)

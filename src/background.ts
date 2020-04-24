@@ -101,6 +101,7 @@ if (isDevelopment) {
 import { ipcMain } from 'electron'
 import dbTask from './database/db'
 import GetDirStructure from './database/modules/dirStructure'
+import { NEDBRootTable, NEDBDirDocument } from './database/models/directory'
 
 ipcMain.on('db_firstInsert-dir', async (ev, args) => {
   try {
@@ -140,14 +141,22 @@ ipcMain.on('db_firstInsert-dir', async (ev, args) => {
   }
 })
 
-ipcMain.on('db_find_parent', (ev, args) => {
-  dbTask.parentTable.find(args).then(result => {
-    ev.reply('db_find_parent', result)
-  })
-    .catch(er => {
-      console.log(`ipc : db_find_parent ERROR query : ${args}\n${er}`)
-      ev.reply('db_find_parent', false)
-    })
+ipcMain.on('db_first-loading', async (ev, args) => {
+  try {
+    interface result extends NEDBDirDocument {
+      tableId: string
+    }
+    const rootTables: NEDBRootTable[] = await dbTask.parentTable.find(args)
+    const result: result[] = []
+    for (const nowTable of rootTables) {
+      await dbTask.childTable.ready(nowTable._id)
+      const rootTableFind: NEDBDirDocument[] = await dbTask.childTable.find(nowTable._id, { isRoot: true })
+      result.push({ ...rootTableFind[0], tableId: nowTable._id })
+    }
+    ev.reply('db_first-loading', result)
+  } catch (er) {
+    throw new Error(`ipc : db_first-loading, args : ${args}\n ${er}`)
+  }
 })
 
 ipcMain.on('db_find_child', (ev, { _id, query, additional = [] }) => {
