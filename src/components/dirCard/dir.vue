@@ -57,7 +57,6 @@
 
 <script>
 import Vue from 'vue'
-import { ipcRenderer } from 'electron'
 
 export default Vue.extend({
   name: 'come__oneDirectory',
@@ -93,26 +92,6 @@ export default Vue.extend({
           break
       }
       return result
-    },
-    getSumnail () {
-      ipcRenderer.send('db_find_child', {
-        _id: this.tableId,
-        query: {
-          file: {
-            $elemMatch: {
-              fileType: 'picture'
-            }
-          }
-        },
-        additional: [
-          { sort: { ctime: 1 } },
-          { limit: 2 }
-        ]
-      })
-      ipcRenderer.once('db_find_child', (ev, rs) => {
-        console.log(this.dir.name)
-        console.log(rs)
-      })
     }
   },
   computed: {
@@ -129,10 +108,6 @@ export default Vue.extend({
       }
 
       return defaultValue
-    },
-    allLoadValue () {
-      this.getSumnail()
-      return this.$store.state.isAllLoad
     }
   }
 })

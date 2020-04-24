@@ -162,16 +162,3 @@ ipcMain.on('db_find_child', (ev, { _id, query, additional = [] }) => {
     ev.reply('db_find_child', false)
   })
 })
-
-ipcMain.on('db_find_sumnail', (ev, { _id, query, additional = [] }) => {
-  dbTask.childTable.ready(_id)
-    .then(() => {
-      dbTask.childTable.find(_id, query, additional).then(result => {
-        ev.reply('db_find_sumnail', result)
-      })
-    })
-    .catch(er => {
-      console.log(`ipc : db_find_child ERROR _id ${_id} query : ${query} additional : ${additional}\n${er}`)
-      ev.reply('db_find_child', false)
-    })
-})
