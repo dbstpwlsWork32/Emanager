@@ -132,7 +132,7 @@ export default Vue.extend({
     },
     allLoadValue () {
       this.getSumnail()
-      return this.$store.state.parentDir.isAllLoad
+      return this.$store.state.isAllLoad
     }
   }
 })

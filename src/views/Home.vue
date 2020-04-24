@@ -84,11 +84,11 @@ export default Vue.extend({
   },
   computed: {
     parentDirList () {
-      return this.$store.state.parentDir.rootTableList
+      return this.$store.state.rootTableList
     },
     nowAdding () {
       let result = false
-      for (const item of this.$store.state.parentDir.rootTableList) {
+      for (const item of this.$store.state.rootTableList) {
         if (item.isLoading) {
           result = true
           break
@@ -99,7 +99,7 @@ export default Vue.extend({
   },
   created () {
     if (!this.parentDirList.length) {
-      this.$store.dispatch('parentDir/load')
+      this.$store.dispatch('load')
     }
   },
   methods: {
@@ -124,7 +124,7 @@ export default Vue.extend({
             this.$data.addClickHandler.isError = false
             this.$data.dialog = false
 
-            this.$store.dispatch('parentDir/add', { name: this.$data.userInput.name, nowPath: this.$data.userInput.url, isLoading: true })
+            this.$store.dispatch('add', { name: this.$data.userInput.name, nowPath: this.$data.userInput.url, isLoading: true })
           }
         })
       }
