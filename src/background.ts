@@ -128,12 +128,12 @@ ipcMain.on('db_firstInsert-dir', async (ev, args) => {
 
     // set new child table and insert
     await dbTask.childTable.ready(parentTableId)
-    const [nedbRootDocument] = await dbTask.childTable.insert(parentTableId, [dirStructureRoot])
+    const [nedbRootDocument]: any = await dbTask.childTable.insert(parentTableId, [dirStructureRoot])
 
     ev.reply('db_firstInsert-dir_reply-insertDb')
     await dbTask.childTable.insert(parentTableId, dirStructureResult)
 
-    ev.reply('db_firstInsert-dir_reply', nedbRootDocument)
+    ev.reply('db_firstInsert-dir_reply', { ...nedbRootDocument, tableId: parentTableId })
   } catch (er) {
     console.log(`ipc : db_firstInsert-dir error\n ${er}`)
     ev.reply('db_firstInsert-dir_reply', false)
@@ -161,4 +161,17 @@ ipcMain.on('db_find_child', (ev, { _id, query, additional = [] }) => {
     console.log(`ipc : db_find_child ERROR _id ${_id} query : ${query} additional : ${additional}\n${er}`)
     ev.reply('db_find_child', false)
   })
+})
+
+ipcMain.on('db_find_sumnail', (ev, { _id, query, additional = [] }) => {
+  dbTask.childTable.ready(_id)
+    .then(() => {
+      dbTask.childTable.find(_id, query, additional).then(result => {
+        ev.reply('db_find_sumnail', result)
+      })
+    })
+    .catch(er => {
+      console.log(`ipc : db_find_child ERROR _id ${_id} query : ${query} additional : ${additional}\n${er}`)
+      ev.reply('db_find_child', false)
+    })
 })

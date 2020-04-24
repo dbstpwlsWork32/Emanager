@@ -1,11 +1,12 @@
 /* eslint-disable */
-import { getAppDataPath } from './modules/getAppDataDir'
 import Datastore from 'nedb'
 // models
 import { DirDocumentModel, RootTableModel, NEDBRootTable } from './models/directory'
+import { app } from 'electron'
+import path from 'path'
 
 const makeDbList = (tableName: string, opt: any = {}): Nedb => {
-  return new Datastore({ filename: getAppDataPath(`emanager/${tableName}`), ...opt})
+  return new Datastore({ filename: path.join(app.getPath('userData'), tableName), ...opt})
 }
 
 const db: any = {

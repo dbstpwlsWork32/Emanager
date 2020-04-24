@@ -24,7 +24,7 @@
               label="root nick name"
               v-model="userInput.name"
             ></v-text-field>
-            <v-btn color="primary" class="addBt" v-on:click="addFolderList()">
+            <v-btn color="primary" class="addBt" v-on:click="addFolderList()" :disabled="nowAdding">
               <v-icon>mdi-plus</v-icon>
             </v-btn>
           </v-card-text>
@@ -53,7 +53,8 @@
       <dirCard
         :dir="dir"
         :user="dir.user"
-        linkPrepend="parent/"
+        :tableId="dir.tableId"
+        :linkPrepend="`parent/${dir.tableId}`"
         :key = index
       ></dirCard>
     </template>
@@ -84,6 +85,16 @@ export default Vue.extend({
   computed: {
     parentDirList () {
       return this.$store.state.parentDir.rootTableList
+    },
+    nowAdding () {
+      let result = false
+      for (const item of this.$store.state.parentDir.rootTableList) {
+        if (item.isLoading) {
+          result = true
+          break
+        }
+      }
+      return result
     }
   },
   created () {
@@ -102,7 +113,7 @@ export default Vue.extend({
             const replace = item.replace(/[^\w\s]/g, '\\$&')
             return this.$data.userInput.url.match(new RegExp('^' + replace))
           })
-          const matchOfNameList = this.parentDirList.map(item => item.name).filter(item => item.match(this.$data.userInput.name))
+          const matchOfNameList = this.parentDirList.map(item => item.name).filter(item => item === this.$data.userInput.name)
           if (er) {
             this.$data.addClickHandler.isError = true
             this.$data.addClickHandler.alertError = 'Can\'t Find Folder'
@@ -114,9 +125,6 @@ export default Vue.extend({
             this.$data.dialog = false
 
             this.$store.dispatch('parentDir/add', { name: this.$data.userInput.name, nowPath: this.$data.userInput.url, isLoading: true })
-              .then(result => {
-                if (!result) alert('something is wrong!')
-              })
           }
         })
       }

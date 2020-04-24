@@ -3,8 +3,6 @@
     <v-card
       :loading="dir.isLoading"
       :disabled="dir.isLoading"
-      @mouseenter="doShowDetails(true)"
-      @mouseleave="doShowDetails(false)"
     >
       <v-list-item
         three-line
@@ -41,7 +39,7 @@
           </v-list-item-title>
           <v-list-item-subtitle>
             <v-rating
-              :value="dir.user.rate"
+              :value="userHandle.rate"
               dense
               hover
               size="20"
@@ -68,14 +66,8 @@ export default Vue.extend({
       type: Object,
       required: true
     },
-    user: {
-      type: Object,
-      default: function () {
-        return {
-          rate: 0
-        }
-      }
-    }
+    user: Object,
+    tableId: String
   },
   data () {
     return {
@@ -102,41 +94,46 @@ export default Vue.extend({
       }
       return result
     },
-    doShowDetails (doit) {
-      if (doit && this.showDetails.task === false) {
-        const task = () => {
-          this.showDetails.show = true
-        }
-        this.showDetails.task = setTimeout(task.bind(this), 500)
-      } else if (!doit) {
-        this.showDetails.show = false
-        if (this.showDetails.task !== false) {
-          clearTimeout(this.showDetails.task)
-          this.showDetails.task = false
-        }
-      }
+    getSumnail () {
+      ipcRenderer.send('db_find_child', {
+        _id: this.tableId,
+        query: {
+          file: {
+            $elemMatch: {
+              fileType: 'picture'
+            }
+          }
+        },
+        additional: [
+          { sort: { ctime: 1 } },
+          { limit: 2 }
+        ]
+      })
+      ipcRenderer.once('db_find_child', (ev, rs) => {
+        console.log(this.dir.name)
+        console.log(rs)
+      })
     }
   },
-  created () {
-    ipcRenderer.send('db_find_child', {
-      parentId: this.id,
-      query: {
-        file: {
-          $elemMatch: {
-            fileType: 'picture'
-          }
+  computed: {
+    userHandle () {
+      const defaultValue = {
+        rate: 0,
+        views: 11
+      }
+
+      for (const key in defaultValue) {
+        if (key in this.user) {
+          defaultValue[key] = this.user[key]
         }
-      },
-      additional: [
-        { sort: { ctime: -1 } },
-        { limit: 6 }
-      ]
-    })
-    ipcRenderer.once('db_find_child', (ev, result) => {
-      result.forEach(item => {
-        this.sumnailPath.push(`file:///${item.nowPath}/${item.file[0].fileName}`)
-      })
-    })
+      }
+
+      return defaultValue
+    },
+    allLoadValue () {
+      this.getSumnail()
+      return this.$store.state.parentDir.isAllLoad
+    }
   }
 })
 </script>

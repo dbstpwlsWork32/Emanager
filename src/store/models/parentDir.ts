@@ -6,17 +6,20 @@ interface RootTableModel extends DirDocumentModel {
   isLoading: boolean;
   process: string;
   _id: string;
+  tableId: string;
 }
 
 interface RootTableState {
   rootTableList: RootTableModel[];
+  isAllLoad: boolean;
 }
 
 const parentDir: Module<RootTableState, {}> = {
   namespaced: true,
   state () {
     return {
-      rootTableList: []
+      rootTableList: [],
+      isAllLoad: false
     }
   },
   mutations: {
@@ -34,6 +37,9 @@ const parentDir: Module<RootTableState, {}> = {
       if (findDirByPath !== -1) {
         state.rootTableList[findDirByPath] = Object.assign(state.rootTableList[findDirByPath], replace)
       }
+    },
+    changeIsAllLoad (state, value: boolean) {
+      state.isAllLoad = value
     }
   },
   actions: {
@@ -54,14 +60,17 @@ const parentDir: Module<RootTableState, {}> = {
               resolve(args)
             })
           })
+
           // eslint-disable-next-line
-          commit('add', nowTableRoot)
+          commit('add', { ...nowTableRoot, tableId: item._id })
+          commit('changeIsAllLoad', true)
         }
       }).catch(er => {
         console.log(`actions.load error\n ${er}`)
       })
     },
     add ({ commit }, { name, nowPath, isLoading }) {
+      commit('changeIsAllLoad', false)
       commit('add', { name, nowPath, isLoading, process: 'start', overall: [], _id: '', user: {} })
 
       ipcRenderer.send('db_firstInsert-dir', { nowPath, name })
@@ -82,17 +91,8 @@ const parentDir: Module<RootTableState, {}> = {
         })
         // eslint-disable-next-line
       }).then((newDoc: any) => {
-        return new Promise((resolve, reject) => {
-          ipcRenderer.send('db_find_parent', { nowPath })
-          ipcRenderer.once('db_find_parent', (ev, result) => {
-            if (result === false) {
-              reject(new Error(`db find error\n query: {${nowPath}}`))
-            } else {
-              commit('modifyByPath', { nowPath, replace: { isLoading: false, process: '', ...newDoc } })
-              resolve(true)
-            }
-          })
-        })
+        commit('modifyByPath', { nowPath, replace: { isLoading: false, process: '', ...newDoc } })
+        commit('changeIsAllLoad', false)
       }).catch(er => {
         throw new Error(`add dir : \n${er}`)
       })
