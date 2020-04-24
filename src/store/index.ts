@@ -71,33 +71,29 @@ export default new Vuex.Store({
         console.log(`actions.load error\n ${er}`)
       })
     },
-    add ({ commit }, { name, nowPath, isLoading }) {
+    async add ({ commit }, { name, nowPath, isLoading }) {
       commit('changeIsAllLoad', false)
       commit('add', { name, nowPath, isLoading, process: 'start', overall: [], _id: '', user: {} })
 
+      /* eslint-disable */
       ipcRenderer.send('db_firstInsert-dir', { nowPath, name })
-      return new Promise((resolve, reject) => {
-        ipcRenderer.once('db_firstInsert-dir_reply-setStructure', () => {
-          commit('modifyByPath', { nowPath, replace: { process: 'set structure...' } })
+      try {
+        const newDoc: any = await new Promise((resolve) => {
+          ipcRenderer.on('db_firstInsert-dir', (ev: any, result: any) => {
+            if (typeof result === 'string') {
+              commit('modifyByPath', { nowPath, replace: { process: result } })
+            } else {
+              resolve(result)
+            }
+          })
         })
-        ipcRenderer.once('db_firstInsert-dir_reply-insertDb', () => {
-          commit('modifyByPath', { nowPath, replace: { process: 'insert at db...' } })
-        })
-        ipcRenderer.once('db_firstInsert-dir_reply', (ev, result) => {
-          if (result !== false) {
-            resolve(result)
-          } else {
-            commit('deleteByPath', nowPath)
-            reject(new Error('db insert error'))
-          }
-        })
-        // eslint-disable-next-line
-      }).then((newDoc: any) => {
+
+        ipcRenderer.removeAllListeners('db_firstInsert-dir')
         commit('modifyByPath', { nowPath, replace: { isLoading: false, process: '', ...newDoc } })
         commit('changeIsAllLoad', false)
-      }).catch(er => {
+      } catch (er) {
         throw new Error(`add dir : \n${er}`)
-      })
+      }
     }
   }
 })

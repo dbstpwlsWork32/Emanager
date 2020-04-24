@@ -104,7 +104,7 @@ import GetDirStructure from './database/modules/dirStructure'
 
 ipcMain.on('db_firstInsert-dir', async (ev, args) => {
   try {
-    ev.reply('db_firstInsert-dir_reply-setStructure')
+    ev.reply('db_firstInsert-dir', 'set structure...')
     const { nowPath, name } = args
 
     // sub dir structure find
@@ -130,13 +130,13 @@ ipcMain.on('db_firstInsert-dir', async (ev, args) => {
     await dbTask.childTable.ready(parentTableId)
     const [nedbRootDocument]: any = await dbTask.childTable.insert(parentTableId, [dirStructureRoot])
 
-    ev.reply('db_firstInsert-dir_reply-insertDb')
+    ev.reply('db_firstInsert-dir', 'insert at db...')
     await dbTask.childTable.insert(parentTableId, dirStructureResult)
 
-    ev.reply('db_firstInsert-dir_reply', { ...nedbRootDocument, tableId: parentTableId })
+    ev.reply('db_firstInsert-dir', { ...nedbRootDocument, tableId: parentTableId })
   } catch (er) {
     console.log(`ipc : db_firstInsert-dir error\n ${er}`)
-    ev.reply('db_firstInsert-dir_reply', false)
+    ev.reply('db_firstInsert-dir', false)
   }
 })
 
