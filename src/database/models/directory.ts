@@ -1,22 +1,9 @@
-export interface DirBaseModel {
+export interface DirDocumentModel {
   nowPath: string;
   overall: {
     type: string,
     count: number
   }[];
-}
-
-export interface ParentDirModel extends DirBaseModel {
-  name: string;
-  file: {
-    fileName: string;
-    fileType: string;
-    ctime: Date;
-    mtime: Date;
-  }[];
-}
-
-export interface ChildDirModel extends DirBaseModel {
   dir: string[];
   file: {
     fileName: string;
@@ -24,7 +11,17 @@ export interface ChildDirModel extends DirBaseModel {
     ctime: Date;
     mtime: Date;
   }[];
-  rate: number;
+  user?: any
+  isRoot?: boolean
+}
+
+export interface RootTableModel {
+  nowPath: string;
+  name: string;
+}
+
+export interface NEDBRootTable extends RootTableModel {
+  _id: string
 }
 
 // https://typescript-kr.github.io/pages/Classes.html

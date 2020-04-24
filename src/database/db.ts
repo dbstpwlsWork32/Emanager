@@ -2,25 +2,21 @@
 import { getAppDataPath } from './modules/getAppDataDir'
 import Datastore from 'nedb'
 // models
-import { ChildDirModel, ParentDirModel } from './models/directory'
-
-interface NedbParentDirModel extends ParentDirModel {
-  _id: string
-}
+import { DirDocumentModel, RootTableModel, NEDBRootTable } from './models/directory'
 
 const makeDbList = (tableName: string, opt: any = {}): Nedb => {
   return new Datastore({ filename: getAppDataPath(`emanager/${tableName}`), ...opt})
 }
 
 const db: any = {
-  parentDirTable: makeDbList('parentDirTable', { autoload: true })
+  rootTable: makeDbList('rootTable', { autoload: true })
 }
-db.parentDirTable.loadDatabase()
+db.rootTable.loadDatabase()
 
 const parentTable = {
-  async insert(model: ParentDirModel): Promise<NedbParentDirModel> {
+  async insert(model: RootTableModel): Promise<NEDBRootTable> {
     return await new Promise((resolve, reject) => {
-      db.parentDirTable.insert(model, (er: NodeJS.ErrnoException, newDoc: any) => {
+      db.rootTable.insert(model, (er: NodeJS.ErrnoException, newDoc: any) => {
         if (!er) resolve(newDoc)
         else reject(er)
       })
@@ -28,7 +24,7 @@ const parentTable = {
   },
   async find(query: any = {}) {
     return await new Promise((resolve, reject) => {
-      db.parentDirTable.find(query, (er: NodeJS.ErrnoException, docs: Nedb[]) => {
+      db.rootTable.find(query, (er: NodeJS.ErrnoException, docs: Nedb[]) => {
         if (!er) resolve(docs)
         else reject(er)
       })
@@ -52,21 +48,28 @@ const childTable = {
       return true
     }
   },
-  async insert(parentTableId: string, childModel: ChildDirModel[]) {
+  async insert(parentTableId: string, childModel: DirDocumentModel[]) {
     // childDirList insert
+    let docResult = []
     for (const nowDirField of childModel) {
-      await new Promise((resolve, reject) => {
-        const { nowPath, dir, file, overall, rate } = nowDirField
-        db[parentTableId].table.insert({ nowPath, dir, file, overall, rate }, (er: NodeJS.ErrnoException) => {
-          if (!er) resolve(true)
+      docResult.push(await new Promise((resolve, reject) => {
+        db[parentTableId].table.insert(nowDirField, (er: NodeJS.ErrnoException, newDoc: any) => {
+          if (!er) resolve(newDoc)
           else reject(er)
         })
-      })
+      }))
     }
+
+    return docResult
   },
-  async find(parentTableId: string, query: any = {}) {
+  async find(parentTableId: string, query: any = {}, addtional: any = []) {
     return await new Promise((resolve, reject) => {
-      db[parentTableId].table.find(query, (er: NodeJS.ErrnoException, docs: Nedb[]) => {
+      let nowTask = db[parentTableId].table.find(query)
+      for (const cbObj of addtional) {
+        const [cbKey] = Object.keys(cbObj)
+        nowTask = nowTask[cbKey](cbObj[cbKey])
+      }
+      nowTask.exec((er: NodeJS.ErrnoException, docs: Nedb[]) => {
         if (!er) resolve(docs)
         else reject(er)
       })

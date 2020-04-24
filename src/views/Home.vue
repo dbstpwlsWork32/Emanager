@@ -47,21 +47,16 @@
         </v-card>
       </v-dialog>
     </div>
-    <div
-      class="b__dir-card"
+    <template
       v-for="(dir, index) in parentDirList"
-      :key="index"
     >
       <dirCard
-        :name="dir.name"
-        :id="dir._id"
-        :nowPath="dir.nowPath"
-        :process="dir.process"
-        :isLoading="dir.isLoading"
-        :overall="dir.overall"
-        :rate="{show: false}"
+        :dir="dir"
+        :user="dir.user"
+        linkPrepend="parent/"
+        :key = index
       ></dirCard>
-    </div>
+    </template>
   </v-row>
 </template>
 
@@ -88,7 +83,7 @@ export default Vue.extend({
   },
   computed: {
     parentDirList () {
-      return this.$store.state.parentDir.list
+      return this.$store.state.parentDir.rootTableList
     }
   },
   created () {

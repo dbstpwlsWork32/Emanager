@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <Nav/>
-    <Body />
+    <Body/>
   </v-app>
 </template>
 
@@ -15,10 +15,7 @@ export default Vue.extend({
   components: {
     Nav,
     Body
-  },
-  data: () => ({
-    //
-  })
+  }
 })
 </script>
 

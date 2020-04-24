@@ -17,15 +17,16 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { secure: tru
 function createWindow () {
   // Create the browser window.
   win = new BrowserWindow({
-    width: 1200,
-    height: 700,
+    width: 1280,
+    height: 800,
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
-      nodeIntegration: true
+      nodeIntegration: true,
+      webSecurity: false
     },
     autoHideMenuBar: true,
-    backgroundColor: '#4c5061'
+    backgroundColor: '#272e3d'
   })
 
   if (process.env.WEBPACK_DEV_SERVER_URL) {
@@ -108,21 +109,31 @@ ipcMain.on('db_firstInsert-dir', async (ev, args) => {
 
     // sub dir structure find
     const dirStructureFinder = new GetDirStructure(nowPath)
-    const dirStructureResult = await dirStructureFinder.promise_readDirStructure(true)
+    let dirStructureResult = await dirStructureFinder.promise_readDirStructure(true)
 
-    // insert at parentDirTable
-    const [parentDirResult] = dirStructureResult.splice(dirStructureResult.length - 1, 1) // root dir result always place last item of result array
-    const { _id: parentTableId } = await dbTask.parentTable.insert({ nowPath, name, overall: parentDirResult.overall, file: parentDirResult.file })
+    // default schema overlay
+    dirStructureResult = dirStructureResult.map(item => {
+      return { ...item, user: {} }
+    })
 
-    // default rate setting
-    const dirStructureResultOveray = dirStructureResult.map(item => { return { ...item, rate: 0 } })
+    // insert at rootTable
+    const { _id: parentTableId } = await dbTask.parentTable.insert({
+      nowPath,
+      name
+    })
+
+    // set unique schema at root path => GetDirStructure module always return root document at last arry index
+    let [dirStructureRoot]: any  = dirStructureResult.splice(dirStructureResult.length - 1, 1)
+    dirStructureRoot = { ...dirStructureRoot, isRoot: true, name }
 
     // set new child table and insert
-    ev.reply('db_firstInsert-dir_reply-insertDb')
     await dbTask.childTable.ready(parentTableId)
-    await dbTask.childTable.insert(parentTableId, dirStructureResultOveray)
+    const [nedbRootDocument] = await dbTask.childTable.insert(parentTableId, [dirStructureRoot])
 
-    ev.reply('db_firstInsert-dir_reply', true)
+    ev.reply('db_firstInsert-dir_reply-insertDb')
+    await dbTask.childTable.insert(parentTableId, dirStructureResult)
+
+    ev.reply('db_firstInsert-dir_reply', nedbRootDocument)
   } catch (er) {
     console.log(`ipc : db_firstInsert-dir error\n ${er}`)
     ev.reply('db_firstInsert-dir_reply', false)
@@ -139,15 +150,15 @@ ipcMain.on('db_find_parent', (ev, args) => {
     })
 })
 
-ipcMain.on('db_find_child', (ev, { parentId, query }) => {
-  dbTask.childTable.ready(parentId)
+ipcMain.on('db_find_child', (ev, { _id, query, additional = [] }) => {
+  dbTask.childTable.ready(_id)
   .then(() => {
-    dbTask.childTable.find(parentId, query).then(result => {
+    dbTask.childTable.find(_id, query, additional).then(result => {
       ev.reply('db_find_child', result)
     })
   })
-    .catch(er => {
-      console.log(`ipc : db_find_child ERROR parentID ${parentId} query : ${query}\n${er}`)
-      ev.reply('db_find_child', false)
-    })
+  .catch(er => {
+    console.log(`ipc : db_find_child ERROR _id ${_id} query : ${query} additional : ${additional}\n${er}`)
+    ev.reply('db_find_child', false)
+  })
 })

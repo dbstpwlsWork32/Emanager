@@ -1,52 +1,68 @@
 import { Module } from 'vuex'
 import { ipcRenderer } from 'electron'
-import { ParentDirModel } from '@/database/models/directory'
+import { DirDocumentModel, NEDBRootTable } from '@/database/models/directory'
 
-interface ParentDirListModel extends ParentDirModel {
+interface RootTableModel extends DirDocumentModel {
   isLoading: boolean;
   process: string;
   _id: string;
 }
 
-interface ParnetDirState {
-  list: ParentDirListModel[];
+interface RootTableState {
+  rootTableList: RootTableModel[];
 }
 
-const parentDir: Module<ParnetDirState, {}> = {
+const parentDir: Module<RootTableState, {}> = {
   namespaced: true,
   state () {
     return {
-      list: []
+      rootTableList: []
     }
   },
   mutations: {
-    add (state, parentDir: ParentDirListModel) {
-      state.list.push(parentDir)
+    add (state, rootPath: RootTableModel) {
+      state.rootTableList.push(rootPath)
     },
     deleteByPath (state, nowPath: string) {
-      const dirPaths = state.list.map(item => item.nowPath)
+      const dirPaths = state.rootTableList.map(item => item.nowPath)
       const findDirByPath = dirPaths.indexOf(nowPath)
-      if (findDirByPath !== -1) state.list.splice(findDirByPath, 1)
+      if (findDirByPath !== -1) state.rootTableList.splice(findDirByPath, 1)
     },
-    modifyByPath (state: ParnetDirState, { nowPath, replace }: { nowPath: string; replace: ParentDirListModel }) {
-      const dirPaths = state.list.map(item => item.nowPath)
+    modifyByPath (state, { nowPath, replace }: { nowPath: string; replace: RootTableModel }) {
+      const dirPaths = state.rootTableList.map(item => item.nowPath)
       const findDirByPath = dirPaths.indexOf(nowPath)
       if (findDirByPath !== -1) {
-        state.list[findDirByPath] = Object.assign(state.list[findDirByPath], replace)
+        state.rootTableList[findDirByPath] = Object.assign(state.rootTableList[findDirByPath], replace)
       }
     }
   },
   actions: {
     load ({ commit }) {
       ipcRenderer.send('db_find_parent', {})
-      ipcRenderer.once('db_find_parent', (ev, args: ParentDirModel[]) => {
-        args.forEach(item => {
-          commit('add', item)
+
+      new Promise((resolve) => {
+        ipcRenderer.once('db_find_parent', (ev, args: NEDBRootTable[]) => {
+          resolve(args)
         })
+        // eslint-disable-next-line
+      }).then(async (result: any) => {
+        for (const item of result) {
+          ipcRenderer.send('db_find_child', { _id: item._id, query: { isRoot: true } })
+
+          const [nowTableRoot] = await new Promise((resolve) => {
+            ipcRenderer.once('db_find_child', (ev, args) => {
+              resolve(args)
+            })
+          })
+          // eslint-disable-next-line
+          commit('add', nowTableRoot)
+        }
+      }).catch(er => {
+        console.log(`actions.load error\n ${er}`)
       })
     },
     add ({ commit }, { name, nowPath, isLoading }) {
-      commit('add', { name, nowPath, isLoading, process: 'start', overall: [], _id: '' })
+      commit('add', { name, nowPath, isLoading, process: 'start', overall: [], _id: '', user: {} })
 
       ipcRenderer.send('db_firstInsert-dir', { nowPath, name })
       return new Promise((resolve, reject) => {
@@ -57,21 +73,22 @@ const parentDir: Module<ParnetDirState, {}> = {
           commit('modifyByPath', { nowPath, replace: { process: 'insert at db...' } })
         })
         ipcRenderer.once('db_firstInsert-dir_reply', (ev, result) => {
-          if (result) {
-            resolve()
+          if (result !== false) {
+            resolve(result)
           } else {
             commit('deleteByPath', nowPath)
             reject(new Error('db insert error'))
           }
         })
-      }).then(() => {
+        // eslint-disable-next-line
+      }).then((newDoc: any) => {
         return new Promise((resolve, reject) => {
           ipcRenderer.send('db_find_parent', { nowPath })
           ipcRenderer.once('db_find_parent', (ev, result) => {
             if (result === false) {
               reject(new Error(`db find error\n query: {${nowPath}}`))
             } else {
-              commit('modifyByPath', { nowPath, replace: { isLoading: false, process: '', _id: result[0]._id, overall: result[0].overall } })
+              commit('modifyByPath', { nowPath, replace: { isLoading: false, process: '', ...newDoc } })
               resolve(true)
             }
           })

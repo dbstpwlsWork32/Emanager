@@ -18,5 +18,5 @@ export default Vue.extend({
 
 <style lang="sass">
   #body
-    background-color: #4c5061
+    background: radial-gradient(#4C5771, #20262C)
 </style>
