@@ -18,11 +18,6 @@ export default Vue.extend({
     return {
       rootResult: {}
     }
-  },
-  watch: {
-    '$route' (to, from) {
-      console.log(from, to)
-    }
   }
 })
 </script>

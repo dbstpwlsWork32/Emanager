@@ -3,6 +3,7 @@
     <v-card
       :loading="dir.isLoading"
       :disabled="dir.isLoading"
+      elevation="20"
     >
       <v-list-item
         three-line
@@ -37,7 +38,7 @@
               <span>{{type.count}}</span>
             </v-tooltip>
           </v-list-item-title>
-          <v-list-item-subtitle>
+          <v-list-item-subtitle v-if="userHandle.rate !== false">
             <v-rating
               :value="userHandle.rate"
               dense
@@ -57,6 +58,7 @@
 
 <script>
 import Vue from 'vue'
+const pathJoin = require('path').join
 
 export default Vue.extend({
   name: 'come__oneDirectory',
@@ -68,11 +70,7 @@ export default Vue.extend({
   },
   data () {
     return {
-      sumnailPath: [],
-      showDetails: {
-        show: false,
-        task: false
-      }
+      thumbnail: []
     }
   },
   methods: {
@@ -105,6 +103,15 @@ export default Vue.extend({
       }
       return defaultValue
     }
+  },
+  created () {
+    const makeThumnailAsFile = () => {
+      this.filePath = this.dir.file.map(item => {
+        return pathJoin(this.dir.nowPath, item.fileName)
+      })
+    }
+
+    if (this.dir.file.length) makeThumnailAsFile()
   }
 })
 </script>

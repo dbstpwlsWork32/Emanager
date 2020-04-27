@@ -1,6 +1,6 @@
 <template>
   <v-row class="l__home">
-    <div class="b__dir-card" style="width:130px;height:130px">
+    <div class="b__dir-card" style="width:140px;height:136px">
       <v-dialog v-model="dialog" width="500px" content-class="l__home_dialog">
         <template v-slot:activator="{ on }">
           <v-btn
@@ -51,7 +51,7 @@
       v-for="(dir, index) in parentDirList"
     >
       <dirCard
-        :dir="dir"
+        :dir="Object.assign(dir, {user: {rate : false}})"
         :linkPrepend="`parent/${dir.tableId}`"
         :key = index
       ></dirCard>
