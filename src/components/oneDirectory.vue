@@ -61,7 +61,3 @@ export default Vue.extend({
   }
 })
 </script>
-
-<style lang="sass">
-  @import './index'
-</style>

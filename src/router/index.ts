@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
-import SubDirectory from '@/views/SubDirectory.vue'
+import oneDirectory from '@/components/oneDirectory.vue'
 
 Vue.use(VueRouter)
 
@@ -13,8 +13,8 @@ const routes = [
   },
   {
     path: '/parent/:parent/:path*',
-    name: 'SubDirectory',
-    component: SubDirectory
+    name: 'oneDirectory',
+    component: oneDirectory
   }
 ]
 

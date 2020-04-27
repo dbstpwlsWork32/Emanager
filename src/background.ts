@@ -97,5 +97,5 @@ if (isDevelopment) {
 }
 
 // ================ set ipc protocol
-require('./protocol/ipc')
-require('./protocol/server')
+import './protocol/ipc'
+import './protocol/server'

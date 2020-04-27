@@ -58,7 +58,7 @@
 
 <script>
 import Vue from 'vue'
-const pathJoin = require('path').join
+import path from 'path'
 
 export default Vue.extend({
   name: 'come__oneDirectory',
@@ -105,18 +105,48 @@ export default Vue.extend({
     }
   },
   created () {
-    const makeThumnailAsFile = () => {
-      this.filePath = this.dir.file.map(item => {
-        if (item.file.fileType === 'video')
-          this.$emit('requestThumbnail', pathJoin(this.dir.nowPath, item.fileName))
-      })
+    const makeThumnailAsFile = async () => {
+      const willVideoThumbnailPaths = []
+
+      for (const file of this.dir.file) {
+        if (this.thumbnail.length + willVideoThumbnailPaths.length >= 3) break
+
+        if (file.fileType === 'picture') {
+          this.thumbnail.push(path.join(this.dir.nowPath, file.fileName))
+        } else if (file.fileType === 'video') {
+          willVideoThumbnailPaths.push(path.join(this.dir.nowPath, file.fileName))
+        }
+      }
+      console.log('asd')
+      if (willVideoThumbnailPaths.length !== -1) {
+        await fetch('http://localhost:443/videoThumbnail', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ data: willVideoThumbnailPaths })
+        })
+      }
     }
 
-    if (this.dir.file.length) makeThumnailAsFile()
+    const nowDirFileTpyes = this.dir.overall.map(item => item.type)
+    if (this.dir.file.length && nowDirFileTpyes.indexOf('game') !== -1) makeThumnailAsFile()
   }
 })
 </script>
 
 <style lang="sass">
-  @import './index'
+  .b__dir-card
+    position: relative
+    width: 200px
+    margin: 10px
+    &_addDir-open
+      width: 100%
+      border: 1px dashed #fff
+    &_details
+      position: absolute !important
+      top: 50% !important
+      right: 0
+      transform: translate(100%, -50%)
+      background-color: #eaf3ff !important
 </style>
