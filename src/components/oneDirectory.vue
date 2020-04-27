@@ -1,63 +1,55 @@
 <template>
-  <v-card></v-card>
+  <v-row>
+    <v-banner single-line>{{folderName}}</v-banner>
+    <template>
+      <v-card>
+        {{tableId}}, {{docId}}
+      </v-card>
+    </template>
+  </v-row>
 </template>
 
 <script>
 import Vue from 'vue'
-const pathJoin = require('path').join
+import { ipcRenderer } from 'electron'
 
 export default Vue.extend({
   name: 'come__oneDirectory',
-  props: {
-    dir: {
-      type: Object,
-      required: true
-    }
-  },
   data () {
     return {
-      thumbnail: []
+      dir: [],
+      file: [],
+      overall: [],
+      nowPath: ''
     }
   },
+  props: ['tableId', 'docId'],
   methods: {
-    getIconTextByType (type) {
-      let result = ''
-      switch (type) {
-        case 'picture':
-          result = 'mdi-image'
-          break
-        case 'video':
-          result = 'mdi-video'
-          break
-        case 'game':
-          result = 'mdi-gamepad-variant'
-          break
-      }
-      return result
+    insertDocument (tableId, docId) {
+      ipcRenderer.send('db_oneDirRequest', { tableId, docId })
+      ipcRenderer.once('db_oneDirRequest', (ev, result) => {
+        this.dir = result.dir
+        this.file = result.file
+        this.overall = result.overall
+        this.nowPath = result.nowPath
+      })
     }
   },
   computed: {
-    userHandle () {
-      const defaultValue = {
-        rate: 0
-      }
-
-      for (const key in defaultValue) {
-        if (key in this.dir.user) {
-          defaultValue[key] = this.dir.user[key]
-        }
-      }
-      return defaultValue
+    folderName () {
+      return this.name || this.nowPath
+    }
+  },
+  watch: {
+    '$route' (to, from) {
+      console.log(to)
+      console.log(from)
+      console.log(this.tableId, this.docId)
+      this.insertDocument(this.tableId, this.docId)
     }
   },
   created () {
-    const makeThumnailAsFile = () => {
-      this.filePath = this.dir.file.map(item => {
-        return pathJoin(this.dir.nowPath, item.fileName)
-      })
-    }
-
-    if (this.dir.file.length) makeThumnailAsFile()
+    this.insertDocument(this.tableId, this.docId)
   }
 })
 </script>

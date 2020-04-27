@@ -16,9 +16,10 @@
   },
   "main": "background.js",
   "dependencies": {
+    "@types/express": "^4.17.6",
     "chai-as-promised": "^7.1.1",
+    "express": "^4.17.1",
     "nedb": "^1.8.0",
-    "tsc-watch": "^4.2.3",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",
     "vue-property-decorator": "^8.3.0",

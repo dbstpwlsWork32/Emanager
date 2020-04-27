@@ -12,8 +12,9 @@ const routes = [
     component: Home
   },
   {
-    path: '/parent/:parent/:path*',
+    path: '/openDir/:tableId/:docId',
     name: 'oneDirectory',
+    props: true,
     component: oneDirectory
   }
 ]

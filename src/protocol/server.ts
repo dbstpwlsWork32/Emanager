@@ -1,11 +1,12 @@
 import fs from 'fs'
 import path from 'path'
 import { spawn } from 'child_process'
-import express from 'express'
+import express, { request } from 'express'
 
 const app = express()
+app.use(express.json())
 
-app.post('/videoThumbnail', (req: any, res: any) => {
+app.post('/videoThumbnail', (request, response) => {
   const task = (nowPath: any) => {
     return new Promise((resolve, reject) => {
       const outputPath = path.join(`${path.parse(nowPath).name}.gif`)
@@ -29,11 +30,8 @@ app.post('/videoThumbnail', (req: any, res: any) => {
       })
     })
   }
-  
 
-  const { body } = req
-
-  console.log(req.body)
+  console.log(request.body)
 })
 
 // if use soket, must set port 443 or 80 for security

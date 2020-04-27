@@ -50,6 +50,7 @@ ipcMain.on('db_first-loading', async (ev, args) => {
     const result: result[] = []
     for (const nowTable of rootTables) {
       await dbTask.childTable.ready(nowTable._id)
+
       const rootTableFind: NEDBDirDocument[] = await dbTask.childTable.find(nowTable._id, { isRoot: true })
       result.push({ ...rootTableFind[0], tableId: nowTable._id })
     }
@@ -59,13 +60,48 @@ ipcMain.on('db_first-loading', async (ev, args) => {
   }
 })
 
-ipcMain.on('db_find_child', async (ev, { _id, query, additional = [] }) => {
+ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId }) => {
+  interface SendData {
+    dir: NowDirList[];
+    file: any[];
+    overall: any[];
+    nowPath: any;
+  }
+  interface NowDirList extends NEDBDirDocument {
+    tableId: string
+  }
+
   try {
-    await dbTask.childTable.ready(_id)
-    const findResults = dbTask.childTable.find(_id, query, additional)
-    ev.reply('db_find_child', findResults)
+    await dbTask.childTable.ready(tableId)
+
+    let sendData: SendData
+    const [rootResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { _id: docId })
+    let nowDirList: NowDirList[] = []
+
+    for (const dirPath of rootResult.dir) {
+      const [childResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { nowPath: dirPath })
+
+      nowDirList.push({
+        nowPath: childResult.nowPath,
+        overall: childResult.overall,
+        dir: childResult.dir,
+        tableId: tableId,
+        _id: childResult._id,
+        user: (childResult.user || {}),
+        file: childResult.file
+      })
+    }
+
+    sendData = {
+      nowPath: rootResult.nowPath,
+      overall: rootResult.overall,
+      file: rootResult.file,
+      dir: nowDirList
+    }
+
+    ev.reply('db_oneDirRequest', sendData)
   } catch (er) {
-    console.log(`ipc : db_find_child ERROR _id ${_id} query : ${query} additional : ${additional}\n${er}`)
-    ev.reply('db_find_child', false)
+    console.log(`ipc : db_oneDirRequest ERROR _id ${tableId} docId : ${docId}\n${er}`)
+    ev.reply('db_oneDirRequest', false)
   }
 })

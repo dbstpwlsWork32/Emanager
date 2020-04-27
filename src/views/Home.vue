@@ -52,7 +52,6 @@
     >
       <dirCard
         :dir="Object.assign(dir, {user: {rate : false}})"
-        :linkPrepend="`parent/${dir.tableId}`"
         :key = index
       ></dirCard>
     </template>

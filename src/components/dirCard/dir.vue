@@ -4,18 +4,19 @@
       :loading="dir.isLoading"
       :disabled="dir.isLoading"
       elevation="20"
+      :img='nowThumnail'
     >
       <v-list-item
         three-line
         link
-        :to="`./${dir.linkPrepend}${dir._id}`"
+        :to="`./openDir/${dir.tableId}/${dir._id}`"
       >
         <v-list-item-content>
           <div
             class="overline mb-4"
             v-if="dir.process"
           >{{dir.process}}</div>
-          <v-list-item-title>{{dir.name}}</v-list-item-title>
+          <v-list-item-title>{{folderName}}</v-list-item-title>
           <v-list-item-subtitle>{{dir.nowPath}}</v-list-item-subtitle>
         </v-list-item-content>
       </v-list-item>
@@ -70,7 +71,8 @@ export default Vue.extend({
   },
   data () {
     return {
-      thumbnail: []
+      thumbnail: [],
+      nowThumnail: null
     }
   },
   methods: {
@@ -102,14 +104,19 @@ export default Vue.extend({
         }
       }
       return defaultValue
+    },
+    folderName () {
+      return this.dir.name || this.dir.nowPath
     }
   },
   created () {
     const makeThumnailAsFile = async () => {
       const willVideoThumbnailPaths = []
-
       for (const file of this.dir.file) {
-        if (this.thumbnail.length + willVideoThumbnailPaths.length >= 3) break
+        if (
+          this.thumbnail.length + willVideoThumbnailPaths.length >= 3 &&
+          file.fileType === 'game'
+        ) break
 
         if (file.fileType === 'picture') {
           this.thumbnail.push(path.join(this.dir.nowPath, file.fileName))
@@ -117,8 +124,8 @@ export default Vue.extend({
           willVideoThumbnailPaths.push(path.join(this.dir.nowPath, file.fileName))
         }
       }
-      console.log('asd')
-      if (willVideoThumbnailPaths.length !== -1) {
+
+      if (willVideoThumbnailPaths.length) {
         await fetch('http://localhost:443/videoThumbnail', {
           method: 'POST',
           headers: {
@@ -129,8 +136,7 @@ export default Vue.extend({
       }
     }
 
-    const nowDirFileTpyes = this.dir.overall.map(item => item.type)
-    if (this.dir.file.length && nowDirFileTpyes.indexOf('game') !== -1) makeThumnailAsFile()
+    if (!this.dir.file.length) makeThumnailAsFile()
   }
 })
 </script>
