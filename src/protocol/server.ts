@@ -1,14 +1,9 @@
-const app = require('express')();
+const app = require('express')()
 const http = require('http').createServer(app)
-// const io = require('socket.io')(http)
 
 app.get('/videoThumbnail', (req: any, res: any) => {
-  // const { tableId, docId } = req.query
+   const { tableId, docId } = req.query
 })
-
-// io.on('connection', (soket: any) => {
-//   console.log(`user connect ${soket}`)
-// })
 
 // if use soket, must set port 443 or 80 for security
 app.listen(443, () => {})

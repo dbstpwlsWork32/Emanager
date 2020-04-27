@@ -107,7 +107,8 @@ export default Vue.extend({
   created () {
     const makeThumnailAsFile = () => {
       this.filePath = this.dir.file.map(item => {
-        return pathJoin(this.dir.nowPath, item.fileName)
+        if (item.file.fileType === 'video')
+          this.$emit('requestThumbnail', pathJoin(this.dir.nowPath, item.fileName))
       })
     }
 

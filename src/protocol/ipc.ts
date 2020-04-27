@@ -59,15 +59,13 @@ ipcMain.on('db_first-loading', async (ev, args) => {
   }
 })
 
-ipcMain.on('db_find_child', (ev, { _id, query, additional = [] }) => {
-  dbTask.childTable.ready(_id)
-    .then(() => {
-      dbTask.childTable.find(_id, query, additional).then(result => {
-        ev.reply('db_find_child', result)
-      })
-    })
-    .catch(er => {
-      console.log(`ipc : db_find_child ERROR _id ${_id} query : ${query} additional : ${additional}\n${er}`)
-      ev.reply('db_find_child', false)
-    })
+ipcMain.on('db_find_child', async (ev, { _id, query, additional = [] }) => {
+  try {
+    await dbTask.childTable.ready(_id)
+    const findResults = dbTask.childTable.find(_id, query, additional)
+    ev.reply('db_find_child', findResults)
+  } catch (er) {
+    console.log(`ipc : db_find_child ERROR _id ${_id} query : ${query} additional : ${additional}\n${er}`)
+    ev.reply('db_find_child', false)
+  }
 })
