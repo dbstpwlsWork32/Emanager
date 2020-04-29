@@ -9,7 +9,7 @@
       <v-list-item
         three-line
         link
-        :to="`/openDir/${dir.tableId}/${dir._id}`"
+        :to="`./openDir/${dir.tableId}/${dir._id}`"
       >
         <v-list-item-content>
           <div
