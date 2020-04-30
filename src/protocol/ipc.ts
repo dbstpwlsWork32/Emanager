@@ -60,7 +60,7 @@ ipcMain.on('db_first-loading', async (ev, args) => {
   }
 })
 
-ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId }) => {
+ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId, startDirIndex = 0, maxGetDir = 30 }) => {
   interface SendData {
     dir: NowDirList[];
     file: any[];
@@ -78,7 +78,11 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId }) => {
     const [rootResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { _id: docId })
     let nowDirList: NowDirList[] = []
 
-    for (const dirPath of rootResult.dir) {
+    for (let i=startDirIndex; i<rootResult.dir.length; i++) {
+      if (nowDirList.length >= maxGetDir) break
+
+      const dirPath = rootResult.dir[i]
+
       const [childResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { nowPath: dirPath })
 
       nowDirList.push({

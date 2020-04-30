@@ -94,11 +94,6 @@ export default Vue.extend({
       return result
     }
   },
-  created () {
-    if (!this.parentDirList.length) {
-      this.$store.dispatch('load')
-    }
-  },
   methods: {
     addFolderList () {
       if (!this.$data.userInput.url || !this.$data.userInput.name) {

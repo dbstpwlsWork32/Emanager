@@ -1,8 +1,8 @@
 <template>
   <v-row>
-    <v-toolbar flat>
-      <v-toolbar-title>{{folderName}}</v-toolbar-title>
-    </v-toolbar>
+    <div>
+      <v-breadcrumbs :items="pathResolve"></v-breadcrumbs>
+    </div>
 
     <v-tabs>
       <v-tab v-if="file.length">Files</v-tab>
@@ -57,21 +57,44 @@ export default Vue.extend({
       dir: [],
       file: [],
       overall: [],
-      nowPath: ''
+      nowPath: '',
+      pathResolve: []
     }
   },
   props: ['tableId', 'docId'],
   methods: {
-    insertDocument (tableId, docId) {
-      ipcRenderer.send('db_oneDirRequest', { tableId, docId })
-      ipcRenderer.once('db_oneDirRequest', (ev, result) => {
-        this.dir = result.dir.map(dir => {
-          return { ...dir, name: path.parse(dir.nowPath).base }
-        })
+    resetDocument (tableId, docId) {
+      const migration = result => {
+        this.dir = result.dir
         this.file = result.file
         this.overall = result.overall
         this.nowPath = result.nowPath
-      })
+      }
+
+      const tableIndex = this.$store.getters.tableCacheIndex(tableId)
+      const docIndex = this.$store.getters.tableCacheDocIndex(tableIndex, docId)
+
+      if (docIndex === -1) {
+        ipcRenderer.send('db_oneDirRequest', { tableId, docId })
+        ipcRenderer.once('db_oneDirRequest', (ev, result) => {
+          result.dir = result.dir.map(item => {
+            return {
+              ...item,
+              name: item.nowPath.replace
+            }
+          })
+          migration(result)
+          this.$store.commit('tableCacheAdd', {
+            tableId,
+            docValue: {
+              _id: docId,
+              ...result
+            }
+          })
+        })
+      } else {
+        migration(this.$store.getters.tableCacheDoc(tableIndex, docIndex))
+      }
     },
     getFilePath (fObj) {
       return path.join(this.nowPath, fObj.fileName)
@@ -80,6 +103,7 @@ export default Vue.extend({
       const doIt = spawn('start',
         [
           '""',
+          '/d',
           `${this.nowPath}`,
           `${fObj.fileName}`
         ]
@@ -92,17 +116,20 @@ export default Vue.extend({
     }
   },
   computed: {
-    folderName () {
-      return this.name || this.nowPath
+    isAllLoad () {
+      return this.$store.state.isAllLoad
     }
   },
   watch: {
     '$route' () {
-      this.insertDocument(this.tableId, this.docId)
+      this.resetDocument(this.tableId, this.docId)
+    },
+    'isAllLoad' (to) {
+      if (to === true) this.resetDocument(this.tableId, this.docId)
     }
   },
   created () {
-    this.insertDocument(this.tableId, this.docId)
+    if (this.isAllLoad === true) this.resetDocument(this.tableId, this.docId)
   },
   components: {
     dirCard,

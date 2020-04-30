@@ -2,7 +2,7 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import { ipcRenderer } from 'electron'
-import { DirDocumentModel, NEDBRootTable } from '@/database/models/directory'
+import { DirDocumentModel } from '@/database/models/directory'
 
 Vue.use(Vuex)
 
@@ -12,21 +12,42 @@ interface RootTableModel extends DirDocumentModel {
   _id: string;
   tableId: string;
 }
-interface RootTableState {
+
+interface RootState {
   rootTableList: RootTableModel[];
   isAllLoad: boolean;
+  tableCache: TableCache[]
+}
+interface TableCache {
+  tableId: string;
+  doc: {
+    // interface SendData {
+    //   dir: NowDirList[];
+    //   file: any[];
+    //   overall: any[];
+    //   nowPath: any;
+    // }
+    // interface NowDirList extends NEDBDirDocument {
+    //   tableId: string
+    // }
+  }[]
 }
 
 export default new Vuex.Store({
   state () {
     return {
       rootTableList: [],
-      isAllLoad: false
+      isAllLoad: false,
+      tableCache: []
     }
   },
   mutations: {
     add (state: any, rootPath: RootTableModel) {
       state.rootTableList.push(rootPath)
+      state.tableCache.push({
+        _id: rootPath.tableId,
+        doc: []
+      })
     },
     deleteByPath (state: any, nowPath: string) {
       const dirPaths = state.rootTableList.map((item: any) => item.nowPath)
@@ -42,6 +63,11 @@ export default new Vuex.Store({
     },
     changeIsAllLoad (state, value: boolean) {
       state.isAllLoad = value
+    },
+    tableCacheAdd (state: any, { tableId, docValue }) {
+      let tableIndex = state.tableCache.map((item: any) => item._id).indexOf(tableId)
+
+      state.tableCache[tableIndex].doc.push(docValue)
     }
   },
   actions: {
@@ -89,5 +115,21 @@ export default new Vuex.Store({
         throw new Error(`add dir : \n${er}`)
       }
     }
+  },
+  getters: {
+    rootTableName: state =>{
+      return (tableId: string) => {
+        const index = state.rootTableList.map((item: any) => item._id).indexOf(tableId)
+        return {
+          nowPath: state.rootTableList[index].nowPath,
+          name: state.rootTableList[index].name
+        }
+      }
+    },
+    tableCacheIndex: state => (tableId:any) => state.tableCache.map((item: any) => item._id).indexOf(tableId),
+    tableCacheDocIndex: state => (tableIndex: any, docId: any) => {
+      return state.tableCache[tableIndex].doc.map((item: any) => item._id).indexOf(docId)
+    },
+    tableCacheDoc: state => (tableIndex: any, docIndex: any) => state.tableCache[tableIndex].doc[docIndex]
   }
 })

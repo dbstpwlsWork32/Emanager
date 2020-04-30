@@ -12,7 +12,12 @@
 import Vue from 'vue'
 
 export default Vue.extend({
-  name: 'Body'
+  name: 'Body',
+  created () {
+    if (!this.$store.state.rootTableList.length) {
+      this.$store.dispatch('load')
+    }
+  }
 })
 </script>
 
