@@ -39,9 +39,9 @@
               <span>{{type.count}}</span>
             </v-tooltip>
           </v-list-item-title>
-          <v-list-item-subtitle v-if="userHandle.rate !== false">
+          <v-list-item-subtitle v-if="this.dir.user.rate !== false">
             <v-rating
-              :value="userHandle.rate"
+              v-model="rate"
               dense
               hover
               size="20"
@@ -60,6 +60,7 @@
 <script>
 import Vue from 'vue'
 import path from 'path'
+import { ipcRenderer } from 'electron'
 
 export default Vue.extend({
   name: 'come__oneDirectory',
@@ -93,17 +94,24 @@ export default Vue.extend({
     }
   },
   computed: {
-    userHandle () {
-      const defaultValue = {
-        rate: 0
+    rate: {
+      get: function () {
+        return this.dir.user.rate || 0
+      },
+      set: function (newVal) {
+        ipcRenderer.send('tableModify', {
+          tableId: this.dir.tableId,
+          docId: this.dir._id,
+          replace: {
+            user: {
+              rate: newVal
+            }
+          }
+        })
+        ipcRenderer.once('tableModify', rs => {
+          if (!rs) alert('update fail')
+        })
       }
-
-      for (const key in defaultValue) {
-        if (key in this.dir.user) {
-          defaultValue[key] = this.dir.user[key]
-        }
-      }
-      return defaultValue
     },
     folderName () {
       return this.dir.name || this.dir.nowPath

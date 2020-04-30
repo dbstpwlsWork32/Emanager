@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, ipcRenderer } from 'electron'
 import dbTask from '../database/db'
 import GetDirStructure from '../database/modules/dirStructure'
 import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'
@@ -108,4 +108,11 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId, startDirIndex = 0, m
     console.log(`ipc : db_oneDirRequest ERROR _id ${tableId} docId : ${docId}\n${er}`)
     ev.reply('db_oneDirRequest', false)
   }
+})
+
+ipcMain.on('tableModify', async (ev, { tableId, docId, replace }) => {
+  await dbTask.childTable.ready(tableId)
+  await dbTask.childTable.update(tableId, docId, replace)
+
+  ev.reply('tableModify', true)
 })

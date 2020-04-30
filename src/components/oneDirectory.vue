@@ -62,7 +62,8 @@ export default Vue.extend({
       dir: [],
       file: [],
       overall: [],
-      nowPath: ''
+      nowPath: '',
+      folderName: ''
     }
   },
   props: ['tableId', 'docId'],
@@ -73,6 +74,9 @@ export default Vue.extend({
         this.file = result.file
         this.overall = result.overall
         this.nowPath = result.nowPath
+
+        const rootName = this.$store.getters.rootTableName(this.tableId)
+        this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name)
       }
 
       const tableIndex = this.$store.getters.tableCacheIndex(tableId)
@@ -122,11 +126,6 @@ export default Vue.extend({
   computed: {
     isAllLoad () {
       return this.$store.state.isAllLoad
-    },
-    folderName () {
-      const { name, nowPath } = this.$store.getters.rootTableName(this.tableId)
-
-      return this.nowPath.replace(nowPath, name)
     }
   },
   watch: {
