@@ -39,6 +39,7 @@
       <v-tab-item
         v-if="dir.length"
         class="tab-item-wrapper"
+        style="min-height: 280px"
       >
         <template v-for="(dir, index) in dir">
             <dirCard
@@ -86,34 +87,19 @@ export default Vue.extend({
         this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name)
       }
 
-      const tableIndex = this.$store.getters.tableCacheIndex(tableId)
-      const docIndex = this.$store.getters.tableCacheDocIndex(tableIndex, docId)
-
-      if (docIndex === -1) {
-        ipcRenderer.send('db_oneDirRequest', { tableId, docId })
-        await new Promise((resolve) => {
-          ipcRenderer.once('db_oneDirRequest', (ev, result) => {
-            result.dir = result.dir.map(item => {
-              return {
-                ...item,
-                name: path.parse(item.nowPath).base
-              }
-            })
-            migration(result)
-            this.$store.commit('tableCacheAdd', {
-              tableId,
-              docValue: {
-                _id: docId,
-                ...result
-              }
-            })
-            resolve()
+      ipcRenderer.send('db_oneDirRequest', { tableId, docId })
+      await new Promise((resolve) => {
+        ipcRenderer.once('db_oneDirRequest', (ev, result) => {
+          result.dir = result.dir.map(item => {
+            return {
+              ...item,
+              name: path.parse(item.nowPath).base
+            }
           })
+          migration(result)
+          resolve()
         })
-      } else {
-        migration(this.$store.getters.tableCacheDoc(tableIndex, docIndex))
-        return ''
-      }
+      })
     },
     getFilePath (fObj) {
       return path.join(this.nowPath, fObj.fileName)
@@ -122,32 +108,24 @@ export default Vue.extend({
       shell.openItem(path.join(this.nowPath, fObj.fileName))
     },
     scrollEvent () {
-      if (window.scrollY + window.innerHeight > document.body.scrollHeight - 300) {
+      if (window.scrollY + window.innerHeight > document.body.scrollHeight - 400) {
         window.removeEventListener('scroll', this.scrollEvent)
         ipcRenderer.send('getChildDirDocs', {
           tableId: this.tableId,
-          childList: this.dirPath,
+          childList: this.dirPath.splice(0, 15),
           startDirIndex: this.dir.length - 1
         })
         ipcRenderer.once('getChildDirDocs', (ev, result) => {
+          result = result.map(item => {
+            return {
+              ...item,
+              name: path.parse(item.nowPath).base
+            }
+          })
           for (const childDir of result) {
             this.dir.push(childDir)
           }
-          const tableIndex = this.$store.getters.tableCacheIndex(this.tableId)
-          const docIndex = this.$store.getters.tableCacheDocIndex(tableIndex, this.docId)
-          this.$store.commit('tableCacheKeyAdd', {
-            tableIndex,
-            docIndex,
-            key: 'dir',
-            adds: result
-          })
-          this.$store.commit('tableCacheKeyDelete', {
-            tableIndex,
-            docIndex,
-            key: 'dirPath',
-            count: 20
-          })
-          if (this.dirPath.length !== 0) {
+          if (this.dirPath.length) {
             window.addEventListener('scroll', this.scrollEvent)
           }
         })

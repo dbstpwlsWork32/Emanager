@@ -6,14 +6,10 @@ import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'
 interface NowDirList extends NEDBDirDocument {
   tableId: string
 }
-const getChildDirDocs = async (tableId: string, childList: string[], startDirIndex: number, maxGetDir: number): Promise<NowDirList[]> => {
+const getChildDirDocs = async (tableId: string, childList: string[]): Promise<NowDirList[]> => {
   let nowDirList: NowDirList[] = []
 
-  for (let i = startDirIndex; i < childList.length; i++) {
-    if (nowDirList.length >= maxGetDir) break
-
-    const dirPath = childList[i]
-
+  for (const dirPath of childList) {
     const [childResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { nowPath: dirPath })
 
     nowDirList.push({
@@ -22,7 +18,7 @@ const getChildDirDocs = async (tableId: string, childList: string[], startDirInd
       dir: childResult.dir,
       tableId: tableId,
       _id: childResult._id,
-      user: (childResult.user || {}),
+      user: childResult.user,
       file: childResult.file
     })
   }
@@ -87,7 +83,7 @@ ipcMain.on('db_first-loading', async (ev, args) => {
   }
 })
 
-ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId, startDirIndex = 0, maxGetDir = 20 }) => {
+ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId }) => {
   interface SendData {
     dir: NowDirList[];
     dirPath: string[];
@@ -102,8 +98,11 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId, startDirIndex = 0, m
     let sendData: SendData
     const [rootResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { _id: docId })
 
-    const nowDirList = await getChildDirDocs(tableId, rootResult.dir, 0, 20)
-    rootResult.dir.splice(0, 20)
+    let nowDirList: NowDirList[] = []
+
+    if (rootResult.dir.length) {
+      nowDirList = await getChildDirDocs(tableId, rootResult.dir.splice(0, 15))
+    }
 
     sendData = {
       nowPath: rootResult.nowPath,
@@ -127,7 +126,7 @@ ipcMain.on('tableModify', async (ev, { tableId, docId, replace }) => {
   ev.reply('tableModify', true)
 })
 
-ipcMain.on('getChildDirDocs', async (ev, { tableId, childList, startDirIndex }) => {
-  const result = await getChildDirDocs(tableId, childList, startDirIndex, 20)
+ipcMain.on('getChildDirDocs', async (ev, { tableId, childList }) => {
+  const result = await getChildDirDocs(tableId, childList)
   ev.reply('getChildDirDocs', result)
 })
