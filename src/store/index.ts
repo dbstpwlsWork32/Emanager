@@ -23,6 +23,7 @@ interface TableCache {
   doc: {
     // interface SendData {
     //   dir: NowDirList[];
+    //   dirPath: string[];
     //   file: any[];
     //   overall: any[];
     //   nowPath: any;
@@ -68,6 +69,14 @@ export default new Vuex.Store({
       let tableIndex = state.tableCache.map((item: any) => item._id).indexOf(tableId)
 
       state.tableCache[tableIndex].doc.push(docValue)
+    },
+    tableCacheKeyAdd (state: any, { tableIndex, docIndex, key, adds }) {
+      for (const dirDoc of adds) {
+        state.tableCache[tableIndex].doc[docIndex][key].push(dirDoc)
+      }
+    },
+    tableCacheKeyDelete (state: any, { tableIndex, docIndex, key, count }) {
+      state.tableCache[tableIndex].doc[docIndex][key].splice(0, count)
     }
   },
   actions: {

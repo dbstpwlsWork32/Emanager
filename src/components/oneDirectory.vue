@@ -3,16 +3,19 @@
     <v-banner
       single-line
       width="100%"
+      sticky
     >
       {{folderName}}
     </v-banner>
 
-    <v-tabs>
+    <v-tabs v-model="currentItem">
       <v-tab v-if="file.length">Files</v-tab>
       <v-tab v-if="dir.length">Folder</v-tab>
+    </v-tabs>
 
+    <v-tabs-items v-model="currentItem">
       <v-tab-item v-if="file.length">
-        <template v-for="(fObj, index) in file">
+        <template v-for="(fObj, index) in file" style="position: sticky">
           <v-img
             v-if="fObj.fileType === 'picture'"
             :key="index"
@@ -35,6 +38,7 @@
 
       <v-tab-item
         v-if="dir.length"
+        class="tab-item-wrapper"
       >
         <template v-for="(dir, index) in dir">
             <dirCard
@@ -43,17 +47,16 @@
             />
         </template>
       </v-tab-item>
-    </v-tabs>
+    </v-tabs-items>
   </v-row>
 </template>
 
 <script>
 import Vue from 'vue'
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, shell } from 'electron'
 import dirCard from '@/components/dirCard/dir'
 import videoCard from '@/components/dirCard/video'
 import path from 'path'
-import { spawn } from 'child_process'
 
 export default Vue.extend({
   name: 'come__oneDirectory',
@@ -63,17 +66,21 @@ export default Vue.extend({
       file: [],
       overall: [],
       nowPath: '',
-      folderName: ''
+      folderName: '',
+      dirLength: 0,
+      dirPath: [],
+      currentItem: 'now item'
     }
   },
   props: ['tableId', 'docId'],
   methods: {
-    resetDocument (tableId, docId) {
+    async resetDocument (tableId, docId) {
       const migration = result => {
         this.dir = result.dir
         this.file = result.file
         this.overall = result.overall
         this.nowPath = result.nowPath
+        this.dirPath = result.dirPath
 
         const rootName = this.$store.getters.rootTableName(this.tableId)
         this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name)
@@ -84,60 +91,105 @@ export default Vue.extend({
 
       if (docIndex === -1) {
         ipcRenderer.send('db_oneDirRequest', { tableId, docId })
-        ipcRenderer.once('db_oneDirRequest', (ev, result) => {
-          result.dir = result.dir.map(item => {
-            return {
-              ...item,
-              name: path.parse(item.nowPath).base
-            }
-          })
-          migration(result)
-          this.$store.commit('tableCacheAdd', {
-            tableId,
-            docValue: {
-              _id: docId,
-              ...result
-            }
+        await new Promise((resolve) => {
+          ipcRenderer.once('db_oneDirRequest', (ev, result) => {
+            result.dir = result.dir.map(item => {
+              return {
+                ...item,
+                name: path.parse(item.nowPath).base
+              }
+            })
+            migration(result)
+            this.$store.commit('tableCacheAdd', {
+              tableId,
+              docValue: {
+                _id: docId,
+                ...result
+              }
+            })
+            resolve()
           })
         })
       } else {
         migration(this.$store.getters.tableCacheDoc(tableIndex, docIndex))
+        return ''
       }
     },
     getFilePath (fObj) {
       return path.join(this.nowPath, fObj.fileName)
     },
     externalProcessDoit (fObj) {
-      const doIt = spawn('start',
-        [
-          '""',
-          '/d',
-          `${this.nowPath}`,
-          `${fObj.fileName}`
-        ]
-      )
-
-      doIt.on('error', err => {
-        alert(err)
-        throw new Error(err)
-      })
+      shell.openItem(path.join(this.nowPath, fObj.fileName))
+    },
+    scrollEvent () {
+      if (window.scrollY + window.innerHeight > document.body.scrollHeight - 300) {
+        window.removeEventListener('scroll', this.scrollEvent)
+        ipcRenderer.send('getChildDirDocs', {
+          tableId: this.tableId,
+          childList: this.dirPath,
+          startDirIndex: this.dir.length - 1
+        })
+        ipcRenderer.once('getChildDirDocs', (ev, result) => {
+          for (const childDir of result) {
+            this.dir.push(childDir)
+          }
+          const tableIndex = this.$store.getters.tableCacheIndex(this.tableId)
+          const docIndex = this.$store.getters.tableCacheDocIndex(tableIndex, this.docId)
+          this.$store.commit('tableCacheKeyAdd', {
+            tableIndex,
+            docIndex,
+            key: 'dir',
+            adds: result
+          })
+          this.$store.commit('tableCacheKeyDelete', {
+            tableIndex,
+            docIndex,
+            key: 'dirPath',
+            count: 20
+          })
+          if (this.dirPath.length !== 0) {
+            window.addEventListener('scroll', this.scrollEvent)
+          }
+        })
+      }
     }
   },
   computed: {
-    isAllLoad () {
+    rootAllLoad () {
       return this.$store.state.isAllLoad
     }
   },
   watch: {
     '$route' () {
-      this.resetDocument(this.tableId, this.docId)
+      if (this.rootAllLoad === true) {
+        this.resetDocument(this.tableId, this.docId)
+          .then(() => {
+            if (this.dirPath.length !== 0) {
+              window.addEventListener('scroll', this.scrollEvent)
+            }
+          })
+      }
     },
-    'isAllLoad' (to) {
-      if (to === true) this.resetDocument(this.tableId, this.docId)
+    'rootAllLoad' (to) {
+      if (to === true) {
+        this.resetDocument(this.tableId, this.docId)
+          .then(() => {
+            if (this.dirPath.length !== 0) {
+              window.addEventListener('scroll', this.scrollEvent)
+            }
+          })
+      }
     }
   },
   created () {
-    if (this.isAllLoad === true) this.resetDocument(this.tableId, this.docId)
+    if (this.rootAllLoad === true) {
+      this.resetDocument(this.tableId, this.docId)
+        .then(() => {
+          if (this.dirPath.length !== 0) {
+            window.addEventListener('scroll', this.scrollEvent)
+          }
+        })
+    }
   },
   components: {
     dirCard,
@@ -148,6 +200,6 @@ export default Vue.extend({
 
 <style lang="sass">
   #oneDirectiory
-    .theme--light.v-tabs-items
-      background-color: none !important
+    .v-tabs-items
+      background: none !important
 </style>

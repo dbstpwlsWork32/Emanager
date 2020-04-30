@@ -16,7 +16,7 @@ db.rootTable.loadDatabase()
 
 const parentTable = {
   async insert (model: RootTableModel): Promise<NEDBRootTable> {
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       db.rootTable.insert(model, (er: NodeJS.ErrnoException, newDoc: any) => {
         if (!er) resolve(newDoc)
         else reject(er)
@@ -24,7 +24,7 @@ const parentTable = {
     })
   },
   async find (query: any = {}): Promise<NEDBRootTable[]> {
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       db.rootTable.find(query, (er: NodeJS.ErrnoException, docs: NEDBRootTable[]) => {
         if (!er) resolve(docs)
         else reject(er)
@@ -37,7 +37,7 @@ const childTable = {
   async ready (parentTableId: string) {
     if (!db[parentTableId]) db[parentTableId] = { enable: false, table : makeDbList(parentTableId) }
     if (!db[parentTableId].enable) {
-      return new Promise((resolve, reject) => {
+      return await new Promise((resolve, reject) => {
         db[parentTableId].table.loadDatabase((er: NodeJS.ErrnoException) => {
           if (!er) {
             db[parentTableId].enable = true
@@ -64,7 +64,7 @@ const childTable = {
     return docResult
   },
   async find (parentTableId: string, query: any = {}, addtional: any = []): Promise<NEDBDirDocument[]> {
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       let nowTask = db[parentTableId].table.find(query)
       for (const cbObj of addtional) {
         const [cbKey] = Object.keys(cbObj)
@@ -77,7 +77,7 @@ const childTable = {
     })
   },
   async update (tableId: string, docId: string, replace: any): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       db[tableId].table.update({ _id: docId }, { $set: replace }, {}, (err: any, cn: number) => {
         if (err) reject(err)
         else resolve()

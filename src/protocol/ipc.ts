@@ -3,6 +3,33 @@ import dbTask from '../database/db'
 import GetDirStructure from '../database/modules/dirStructure'
 import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'
 
+interface NowDirList extends NEDBDirDocument {
+  tableId: string
+}
+const getChildDirDocs = async (tableId: string, childList: string[], startDirIndex: number, maxGetDir: number): Promise<NowDirList[]> => {
+  let nowDirList: NowDirList[] = []
+
+  for (let i = startDirIndex; i < childList.length; i++) {
+    if (nowDirList.length >= maxGetDir) break
+
+    const dirPath = childList[i]
+
+    const [childResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { nowPath: dirPath })
+
+    nowDirList.push({
+      nowPath: childResult.nowPath,
+      overall: childResult.overall,
+      dir: childResult.dir,
+      tableId: tableId,
+      _id: childResult._id,
+      user: (childResult.user || {}),
+      file: childResult.file
+    })
+  }
+
+  return nowDirList
+}
+
 ipcMain.on('db_firstInsert-dir', async (ev, args) => {
   try {
     ev.reply('db_firstInsert-dir', 'set structure...')
@@ -60,15 +87,13 @@ ipcMain.on('db_first-loading', async (ev, args) => {
   }
 })
 
-ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId, startDirIndex = 0, maxGetDir = 30 }) => {
+ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId, startDirIndex = 0, maxGetDir = 20 }) => {
   interface SendData {
     dir: NowDirList[];
+    dirPath: string[];
     file: any[];
     overall: any[];
     nowPath: any;
-  }
-  interface NowDirList extends NEDBDirDocument {
-    tableId: string
   }
 
   try {
@@ -76,28 +101,13 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId, startDirIndex = 0, m
 
     let sendData: SendData
     const [rootResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { _id: docId })
-    let nowDirList: NowDirList[] = []
 
-    for (let i=startDirIndex; i<rootResult.dir.length; i++) {
-      if (nowDirList.length >= maxGetDir) break
-
-      const dirPath = rootResult.dir[i]
-
-      const [childResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { nowPath: dirPath })
-
-      nowDirList.push({
-        nowPath: childResult.nowPath,
-        overall: childResult.overall,
-        dir: childResult.dir,
-        tableId: tableId,
-        _id: childResult._id,
-        user: (childResult.user || {}),
-        file: childResult.file
-      })
-    }
+    const nowDirList = await getChildDirDocs(tableId, rootResult.dir, 0, 20)
+    rootResult.dir.splice(0, 20)
 
     sendData = {
       nowPath: rootResult.nowPath,
+      dirPath: rootResult.dir,
       overall: rootResult.overall,
       file: rootResult.file,
       dir: nowDirList
@@ -115,4 +125,9 @@ ipcMain.on('tableModify', async (ev, { tableId, docId, replace }) => {
   await dbTask.childTable.update(tableId, docId, replace)
 
   ev.reply('tableModify', true)
+})
+
+ipcMain.on('getChildDirDocs', async (ev, { tableId, childList, startDirIndex }) => {
+  const result = await getChildDirDocs(tableId, childList, startDirIndex, 20)
+  ev.reply('getChildDirDocs', result)
 })
