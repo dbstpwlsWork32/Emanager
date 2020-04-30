@@ -146,6 +146,7 @@ export default Vue.extend({
     position: relative
     width: 200px
     margin: 10px
+    float: left
     &_addDir-open
       width: 100%
       border: 1px dashed #fff

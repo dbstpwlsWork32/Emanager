@@ -1,8 +1,11 @@
 <template>
-  <v-row>
-    <div>
-      <v-breadcrumbs :items="pathResolve"></v-breadcrumbs>
-    </div>
+  <v-row id="oneDirectiory">
+    <v-banner
+      single-line
+      width="100%"
+    >
+      {{folderName}}
+    </v-banner>
 
     <v-tabs>
       <v-tab v-if="file.length">Files</v-tab>
@@ -30,12 +33,14 @@
         </template>
       </v-tab-item>
 
-      <v-tab-item v-if="dir.length">
+      <v-tab-item
+        v-if="dir.length"
+      >
         <template v-for="(dir, index) in dir">
-          <dirCard
-            :key="index"
-            :dir="dir"
-          />
+            <dirCard
+              :dir="dir"
+              :key="index"
+            />
         </template>
       </v-tab-item>
     </v-tabs>
@@ -57,8 +62,7 @@ export default Vue.extend({
       dir: [],
       file: [],
       overall: [],
-      nowPath: '',
-      pathResolve: []
+      nowPath: ''
     }
   },
   props: ['tableId', 'docId'],
@@ -80,7 +84,7 @@ export default Vue.extend({
           result.dir = result.dir.map(item => {
             return {
               ...item,
-              name: item.nowPath.replace
+              name: path.parse(item.nowPath).base
             }
           })
           migration(result)
@@ -118,6 +122,11 @@ export default Vue.extend({
   computed: {
     isAllLoad () {
       return this.$store.state.isAllLoad
+    },
+    folderName () {
+      const { name, nowPath } = this.$store.getters.rootTableName(this.tableId)
+
+      return this.nowPath.replace(nowPath, name)
     }
   },
   watch: {
@@ -137,3 +146,9 @@ export default Vue.extend({
   }
 })
 </script>
+
+<style lang="sass">
+  #oneDirectiory
+    .theme--light.v-tabs-items
+      background-color: none !important
+</style>
