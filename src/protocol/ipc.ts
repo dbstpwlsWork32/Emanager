@@ -165,7 +165,7 @@ ipcMain.on('get_next_picture-list', async (ev, { tableId, query, nowPath, goPrev
       
       if (existPicture) {
         unFind = false
-        result = { file: resultDir.file, nowPath: resultDir.nowPath }
+        result = { file: resultDir.file, nowPath: resultDir.nowPath, _id: resultDir._id }
       } else {
         nowIndex = getPositionIndex(nowIndex)
       }

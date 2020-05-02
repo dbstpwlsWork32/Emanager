@@ -38,7 +38,7 @@
         style="width: 200px;height: 130px"
       >
         <v-toolbar-title :cols="12">
-          {{dialog.length}} / {{fileSee.concat(fileToSee).length}}
+          {{dialog.length}} / {{dialog.allFile.length}}
         </v-toolbar-title>
 
         <div>
@@ -77,12 +77,14 @@ export default Vue.extend({
       loadCounter: 0,
       dialog: {
         see: false,
-        length: 1
+        length: 1,
+        allFile: [],
+        nowPath: this.nowPath
       },
       fileSee: [],
       locationField: {
         rules: [
-          v => (!/\D/.test(v) && v <= this.allFile.length && v > 0) || `0 < input < ${this.allFile.length} && only number`
+          v => (!/\D/.test(v) && v <= this.dialog.allFile.length && v > 0) || `0 < input < ${this.dialog.allFile.length} && only number`
         ],
         value: 1
       }
@@ -103,8 +105,8 @@ export default Vue.extend({
     dialogChange (isPrev) {
       this.dialog.length = (isPrev) ? this.dialog.length - 1 : this.dialog.length + 1
 
-      if (this.dialog.length > this.allFile.length) this.dialog.length = 1
-      else if (this.dialog.length < 1) this.dialog.length = this.allFile.length
+      if (this.dialog.length > this.dialog.allFile.length) this.dialog.length = 1
+      else if (this.dialog.length < 1) this.dialog.length = this.dialog.allFile.length
     },
     loadSuccess () {
       this.loadCounter++
@@ -116,23 +118,35 @@ export default Vue.extend({
       }
     },
     // garbage folder delete! dir is exist but no exist file folder
-    getFilePath (fileName) {
-      const nowPath = `file:///${path.join(this.nowPath, fileName).replace(/\\/g, '/')}`
-      return nowPath
+    getFilePath (fileName, nowPath = this.nowPath) {
+      const filePath = `file:///${path.join(nowPath, fileName).replace(/\\/g, '/')}`
+      return filePath
     },
     async changeDir (goPrev = false) {
       const splitPath = this.nowPath.split(path.sep)
       splitPath.splice(splitPath.length - 1, 1)
       const prevPath = splitPath.join(path.sep)
 
-      ipcRenderer.send('get_next_picture-list', { tableId: this.tableId, query: { nowPath: prevPath }, nowPath: this.nowPath, goPrev })
+      ipcRenderer.send('get_next_picture-list', { tableId: this.tableId, query: { nowPath: prevPath }, nowPath: this.dialog.nowPath, goPrev })
 
       const nextFileResult = await new Promise(resolve => {
         ipcRenderer.once('get_next_picture-list', (ev, result) => {
           resolve(result)
         })
       })
-      console.log(nextFileResult)
+
+      this.dialog._id = nextFileResult._id
+      const toDelete = this.dialog.allFile.length
+      const collator = new Intl.Collator(undefined, {
+        numeric: true,
+        sensitivity: 'base'
+      })
+      nextFileResult.file.map(item => item.fileName).sort(collator.compare, null, 2).map(item => {
+        this.dialog.allFile.push(item)
+      })
+      this.dialog.allFile.splice(0, toDelete)
+      this.dialog.nowPath = nextFileResult.nowPath
+      this.dialog.length = 1
     }
   },
   watch: {
@@ -150,7 +164,7 @@ export default Vue.extend({
       return this.allFile.map(item => item.fileName)
     },
     nowPicturePath () {
-      return this.getFilePath(this.fileSee.concat(this.fileToSee)[this.dialog.length - 1])
+      return this.getFilePath(this.dialog.allFile[this.dialog.length - 1], this.dialog.nowPath)
     }
   },
   created () {
@@ -159,7 +173,9 @@ export default Vue.extend({
       numeric: true,
       sensitivity: 'base'
     })
-    this.fileToSee.sort(collator.compare, null, 2)
+    this.fileToSee.sort(collator.compare, null, 2).map(item => {
+      this.dialog.allFile.push(item)
+    })
 
     this.fileToSee.splice(0, 8).map(item => {
       this.fileSee.push(item)
