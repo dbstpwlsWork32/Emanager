@@ -87,7 +87,7 @@ ipcMain.on('db_first-loading', async (ev, args) => {
   }
 })
 
-ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId }) => {
+ipcMain.on('db_oneDirRequest', async (ev, { tableId, query }) => {
   interface SendData {
     dir: NowDirList[];
     dirPath: string[];
@@ -100,7 +100,7 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId }) => {
     await dbTask.childTable.ready(tableId)
 
     let sendData: SendData
-    const [rootResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { _id: docId })
+    const [rootResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, query)
 
     let nowDirList: NowDirList[] = []
 
@@ -118,7 +118,7 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, docId }) => {
 
     ev.reply('db_oneDirRequest', sendData)
   } catch (er) {
-    console.log(`ipc : db_oneDirRequest ERROR _id ${tableId} docId : ${docId}\n${er}`)
+    console.log(`ipc : db_oneDirRequest ERROR _id ${tableId} query : ${query}\n${er}`)
     ev.reply('db_oneDirRequest', false)
   }
 })
@@ -133,4 +133,47 @@ ipcMain.on('tableModify', async (ev, { tableId, docId, replace }) => {
 ipcMain.on('getChildDirDocs', async (ev, { tableId, childList }) => {
   const result = await getChildDirDocs(tableId, childList)
   ev.reply('getChildDirDocs', result)
+})
+
+ipcMain.on('get_next_picture-list', async (ev, { tableId, query, nowPath, goPrev }) => {
+  try {
+    const getPositionIndex = (index: number): number => {
+      index = (!goPrev) ? index + 1 : index - 1
+
+      if (index < 0) index = rootResult.dir.length - 1
+      else if (index > rootResult.dir.length - 1) index = 0
+      return index
+    }
+
+    await dbTask.childTable.ready(tableId)
+
+    const [rootResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, query)
+
+    let nowIndex = getPositionIndex(rootResult.dir.indexOf(nowPath))
+    let unFind = true
+    let result: any = []
+    while (unFind) {
+      const [resultDir]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { nowPath: rootResult.dir[nowIndex] })
+      
+      let existPicture = false
+      for (const file of resultDir.file) {
+        if (file.fileType === 'picture') {
+          existPicture = true
+          break
+        }
+      }
+      
+      if (existPicture) {
+        unFind = false
+        result = { file: resultDir.file, nowPath: resultDir.nowPath }
+      } else {
+        nowIndex = getPositionIndex(nowIndex)
+      }
+    }
+
+    ev.reply('get_next_picture-list', result)
+  } catch (er) {
+    console.log(`ipc : get_next_picture-list ERROR _id ${tableId} query : ${query}\n${er}`)
+    ev.reply('get_next_picture-list', false)
+  }
 })

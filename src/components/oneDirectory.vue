@@ -21,6 +21,7 @@
         v-if="fileStat.picture.length"
         :allFile="fileStat.picture"
         :nowPath="nowPath"
+        :tableId="tableId"
       />
 
       <v-tab-item v-if="fileStat.video.length">
@@ -80,7 +81,8 @@ export default Vue.extend({
         picture: [],
         video: [],
         game: []
-      }
+      },
+      bindScroll: false
     }
   },
   props: ['tableId', 'docId'],
@@ -106,7 +108,7 @@ export default Vue.extend({
         this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name).replace(/\\/g, '/')
       }
 
-      ipcRenderer.send('db_oneDirRequest', { tableId, docId })
+      ipcRenderer.send('db_oneDirRequest', { tableId, query: { _id: docId } })
       await new Promise((resolve) => {
         ipcRenderer.once('db_oneDirRequest', (ev, result) => {
           result.dir = result.dir.map(item => {
@@ -130,7 +132,7 @@ export default Vue.extend({
       shell.openItem(path.join(this.nowPath, fileName))
     },
     scrollEvent (repeat) {
-      if (!(window.scrollY + window.innerHeight > document.body.scrollHeight - 200)) {
+      if (!(window.scrollY + window.innerHeight > document.body.scrollHeight - 400)) {
         repeat = false
         return false
       }
@@ -152,8 +154,9 @@ export default Vue.extend({
           this.dir.push(childDir)
         }
         if (this.dirPath.length) {
+          this.bindScroll = true
           if (repeat) this.scrollEvent()
-          window.addEventListener('scroll', this.scrollEvent)
+          else window.addEventListener('scroll', this.scrollEvent)
         }
       })
     }
@@ -168,7 +171,8 @@ export default Vue.extend({
       if (this.rootAllLoad === true) {
         this.resetDocument(this.tableId, this.docId)
           .then(() => {
-            if (this.dirPath.length !== 0) {
+            if (this.dirPath.length !== 0 && !this.bindScroll) {
+              this.bindScroll = true
               window.addEventListener('scroll', this.scrollEvent)
             }
           })
@@ -178,7 +182,8 @@ export default Vue.extend({
       if (to === true) {
         this.resetDocument(this.tableId, this.docId)
           .then(() => {
-            if (this.dirPath.length !== 0) {
+            if (this.dirPath.length !== 0 && !this.bindScroll) {
+              this.bindScroll = true
               window.addEventListener('scroll', this.scrollEvent)
             }
           })
@@ -189,7 +194,8 @@ export default Vue.extend({
     if (this.rootAllLoad === true) {
       this.resetDocument(this.tableId, this.docId)
         .then(() => {
-          if (this.dirPath.length !== 0) {
+          if (this.dirPath.length !== 0 && !this.bindScroll) {
+            this.bindScroll = true
             window.addEventListener('scroll', this.scrollEvent)
           }
         })

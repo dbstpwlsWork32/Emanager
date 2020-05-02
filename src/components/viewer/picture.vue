@@ -13,7 +13,7 @@
         <v-col :key="index" cols="3">
           <v-img
             :src="getFilePath(fileName)"
-            @load="loadSuccess('picture')"
+            @load="loadSuccess()"
             @click="dialogOpen(index)"
             style="width:100%;cursor:pointer"
           />
@@ -28,8 +28,10 @@
       fullscreen
       transition="dialog-transition"
       content-class="b__picture-viewer"
-      @keydown.right.prevent="dialogChange()"
-      @keydown.left.prevent="dialogChange(true)"
+      @keydown.right.exact="dialogChange()"
+      @keydown.left.exact="dialogChange(true)"
+      @keydown.up.exact="changeDir()"
+      @keydown.down.exact="changeDir(true)"
     >
       <v-toolbar
         class="b__picture-viewer__toolbar"
@@ -61,12 +63,14 @@
 <script>
 import Vue from 'vue'
 import path from 'path'
+import { ipcRenderer } from 'electron'
 
 export default Vue.extend({
   name: 'come__picture',
   props: {
     allFile: Array,
-    nowPath: String
+    nowPath: String,
+    tableId: String
   },
   data () {
     return {
@@ -111,9 +115,24 @@ export default Vue.extend({
         })
       }
     },
+    // garbage folder delete! dir is exist but no exist file folder
     getFilePath (fileName) {
       const nowPath = `file:///${path.join(this.nowPath, fileName).replace(/\\/g, '/')}`
       return nowPath
+    },
+    async changeDir (goPrev = false) {
+      const splitPath = this.nowPath.split(path.sep)
+      splitPath.splice(splitPath.length - 1, 1)
+      const prevPath = splitPath.join(path.sep)
+
+      ipcRenderer.send('get_next_picture-list', { tableId: this.tableId, query: { nowPath: prevPath }, nowPath: this.nowPath, goPrev })
+
+      const nextFileResult = await new Promise(resolve => {
+        ipcRenderer.once('get_next_picture-list', (ev, result) => {
+          resolve(result)
+        })
+      })
+      console.log(nextFileResult)
     }
   },
   watch: {
@@ -122,7 +141,7 @@ export default Vue.extend({
     },
     'locationField.value' () {
       if (typeof this.locationField.rules[0](this.locationField.value) !== 'string') {
-        this.dialog.length = this.locationField.value
+        this.dialog.length = parseInt(this.locationField.value)
       }
     }
   },
