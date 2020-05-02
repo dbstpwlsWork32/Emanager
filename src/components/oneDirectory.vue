@@ -80,10 +80,16 @@
       transition="dialog-transition"
       content-class="b__picture-viewer"
     >
-        <img
-          :src="getFilePath(fileSee.picture.concat(fileToSee.picture)[pictureDialog.index])"
-          style="width:initial;height:100vh"
-        />
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on }">
+          <v-btn color="primary" class="b__picture-viewer-tips" dark v-on="on">Help</v-btn>
+        </template>
+        <span>Help</span>
+      </v-tooltip>
+      <img
+        :src="getFilePath(fileSee.picture.concat(fileToSee.picture)[pictureDialog.index])"
+        style="width:initial;height:100vh"
+      />
     </v-dialog>
   </v-row>
 </template>
@@ -138,7 +144,7 @@ export default Vue.extend({
         const rootName = this.$store.getters.rootTableName(this.tableId)
         this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name).replace(/\\/g, '/')
         this.loadSuccessCounter.picture = 0
-        if (this.pictureDialog.see) this.openPictureWatcherClose()
+        if (this.pictureDialog.see) this.pictureDialog.see = false
 
         this.fileToSee = {
           video: [],
@@ -196,7 +202,7 @@ export default Vue.extend({
       shell.openItem(path.join(this.nowPath, fileName))
     },
     scrollEvent () {
-      if (!(window.scrollY + window.innerHeight > document.body.scrollHeight - 400)) return false
+      if (!(window.scrollY + window.innerHeight > document.body.scrollHeight - 200)) return false
 
       window.removeEventListener('scroll', this.scrollEvent)
       ipcRenderer.send('getChildDirDocs', {
@@ -237,7 +243,6 @@ export default Vue.extend({
       document.body.style.height = '100vh'
     },
     openPictureWatcherClose () {
-      this.pictureDialog.see = false
       this.pictureDialog.index = 0
       document.body.style.overflow = 'initial'
       document.body.style.height = 'initial'
@@ -268,6 +273,9 @@ export default Vue.extend({
             }
           })
       }
+    },
+    'pictureDialog.see' () {
+      if (!this.pictureDialog.see) this.openPictureWatcherClose()
     }
   },
   created () {
@@ -295,4 +303,12 @@ export default Vue.extend({
     background: #000
     overflow: hidden
     text-align: center
+    &-tips
+      position: absolute
+      width: 20px
+      height: 20px
+      background: none
+      opacity: .5
+      left: 10%
+      top: 10%
 </style>
