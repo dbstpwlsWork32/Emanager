@@ -18,14 +18,26 @@
     <v-tabs-items v-model="currentItem">
 
       <v-tab-item v-if="fileSee.picture.length">
-        <template v-for="(fileName, index) in fileSee.picture">
-          <v-img
-            :src="getFilePath(fileName)"
-            :key="index"
-            @load="loadSuccess('picture')"
-          >
-          </v-img>
-        </template>
+        <v-progress-circular
+          :size="100"
+          :width="10"
+          color="red"
+          indeterminate
+          style="margin: 20px"
+          v-show="!loadSuccessCounter.picture"
+        />
+        <v-row style="margin: 0; width: 100%">
+          <template v-for="(fileName, index) in fileSee.picture">
+            <v-col :key="index" cols="3">
+              <v-img
+                :src="getFilePath(fileName)"
+                @load="loadSuccess('picture')"
+                @click="openPictureWatcherOpen(index)"
+                style="width:100%;cursor:pointer"
+              />
+            </v-col>
+          </template>
+        </v-row>
       </v-tab-item>
 
       <v-tab-item v-if="fileSee.video.length">
@@ -48,17 +60,31 @@
       <v-tab-item
         v-if="dir.length"
         class="tab-item-wrapper"
-        style="min-height: 280px"
+        style="min-height: 100vh"
       >
         <template v-for="(dir, index) in dir">
-            <dirCard
-              :dir="dir"
-              :key="index"
-            />
+          <dirCard
+            :dir="dir"
+            :key="index"
+          />
         </template>
       </v-tab-item>
 
     </v-tabs-items>
+
+    <v-dialog
+      v-if="pictureDialog.see"
+      v-model="pictureDialog.see"
+      hide-overlay
+      fullscreen
+      transition="dialog-transition"
+      content-class="b__picture-viewer"
+    >
+        <img
+          :src="getFilePath(fileSee.picture.concat(fileToSee.picture)[pictureDialog.index])"
+          style="width:initial;height:100vh"
+        />
+    </v-dialog>
   </v-row>
 </template>
 
@@ -92,6 +118,10 @@ export default Vue.extend({
       },
       loadSuccessCounter: {
         picture: 0
+      },
+      pictureDialog: {
+        see: false,
+        index: 0
       }
     }
   },
@@ -106,9 +136,16 @@ export default Vue.extend({
         this.dirPath = result.dirPath
 
         const rootName = this.$store.getters.rootTableName(this.tableId)
-        this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name)
+        this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name).replace(/\\/g, '/')
+        this.loadSuccessCounter.picture = 0
+        if (this.pictureDialog.see) this.openPictureWatcherClose()
 
         this.fileToSee = {
+          video: [],
+          picture: [],
+          game: []
+        }
+        this.fileSee = {
           video: [],
           picture: [],
           game: []
@@ -148,9 +185,11 @@ export default Vue.extend({
           resolve()
         })
       })
+
+      this.scrollEvent()
     },
     getFilePath (fileName) {
-      const nowPath = 'file:///' + path.join(this.nowPath, fileName).replace(/\\/, '/')
+      const nowPath = `file:///${path.join(this.nowPath, fileName).replace(/\\/g, '/')}`
       return nowPath
     },
     externalProcessDoit (fileName) {
@@ -190,6 +229,18 @@ export default Vue.extend({
           })
         }
       }
+    },
+    openPictureWatcherOpen (index) {
+      this.pictureDialog.see = true
+      this.pictureDialog.index = index
+      document.body.style.overflow = 'hidden'
+      document.body.style.height = '100vh'
+    },
+    openPictureWatcherClose () {
+      this.pictureDialog.see = false
+      this.pictureDialog.index = 0
+      document.body.style.overflow = 'initial'
+      document.body.style.height = 'initial'
     }
   },
   computed: {
@@ -240,4 +291,8 @@ export default Vue.extend({
   #oneDirectiory
     .v-tabs-items
       background: none !important
+  .b__picture-viewer
+    background: #000
+    overflow: hidden
+    text-align: center
 </style>

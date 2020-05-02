@@ -1,4 +1,4 @@
-import { ipcMain, ipcRenderer } from 'electron'
+import { ipcMain, BrowserWindow } from 'electron'
 import dbTask from '../database/db'
 import GetDirStructure from '../database/modules/dirStructure'
 import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'

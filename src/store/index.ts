@@ -22,7 +22,8 @@ export default new Vuex.Store({
   state () {
     return {
       rootTableList: [],
-      isAllLoad: false
+      isAllLoad: false,
+      isFullScreen: false
     }
   },
   mutations: {
@@ -43,6 +44,9 @@ export default new Vuex.Store({
     },
     changeIsAllLoad (state, value: boolean) {
       state.isAllLoad = value
+    },
+    changeFullScreen(state, value: boolean) {
+      state.isFullScreen = value
     }
   },
   actions: {
