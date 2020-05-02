@@ -22,6 +22,7 @@
           <v-img
             :src="getFilePath(fileName)"
             :key="index"
+            @load="loadSuccess('picture')"
           >
           </v-img>
         </template>
@@ -88,6 +89,9 @@ export default Vue.extend({
         video: [],
         picture: [],
         game: []
+      },
+      loadSuccessCounter: {
+        picture: 0
       }
     }
   },
@@ -155,27 +159,36 @@ export default Vue.extend({
     scrollEvent () {
       if (!(window.scrollY + window.innerHeight > document.body.scrollHeight - 400)) return false
 
-      if (this.dirPath.length) {
-        window.removeEventListener('scroll', this.scrollEvent)
-        ipcRenderer.send('getChildDirDocs', {
-          tableId: this.tableId,
-          childList: this.dirPath.splice(0, 15),
-          startDirIndex: this.dir.length - 1
+      window.removeEventListener('scroll', this.scrollEvent)
+      ipcRenderer.send('getChildDirDocs', {
+        tableId: this.tableId,
+        childList: this.dirPath.splice(0, 15),
+        startDirIndex: this.dir.length - 1
+      })
+      ipcRenderer.once('getChildDirDocs', (ev, result) => {
+        result = result.map(item => {
+          return {
+            ...item,
+            name: path.parse(item.nowPath).base
+          }
         })
-        ipcRenderer.once('getChildDirDocs', (ev, result) => {
-          result = result.map(item => {
-            return {
-              ...item,
-              name: path.parse(item.nowPath).base
-            }
+        for (const childDir of result) {
+          this.dir.push(childDir)
+        }
+        if (this.dirPath.length) {
+          window.addEventListener('scroll', this.scrollEvent)
+        }
+      })
+    },
+    loadSuccess (type) {
+      if (type === 'picture') {
+        this.loadSuccessCounter.picture++
+
+        if (this.loadSuccessCounter.picture % 8 === 0) {
+          this.fileToSee.picture.splice(0, 8).map(item => {
+            this.fileSee.picture.push(item)
           })
-          for (const childDir of result) {
-            this.dir.push(childDir)
-          }
-          if (this.dirPath.length) {
-            window.addEventListener('scroll', this.scrollEvent)
-          }
-        })
+        }
       }
     }
   },
