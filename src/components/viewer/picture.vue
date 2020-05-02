@@ -28,6 +28,8 @@
       fullscreen
       transition="dialog-transition"
       content-class="b__picture-viewer"
+      @keydown.right.prevent="dialogChange()"
+      @keydown.left.prevent="dialogChange(true)"
     >
       <v-tooltip bottom>
         <template v-slot:activator="{ on }">
@@ -35,8 +37,9 @@
         </template>
         <span>Help</span>
       </v-tooltip>
-      <img
-        :src="getFilePath(fileSee.concat(fileToSee.picture)[dialog.index])"
+      <v-img
+        contain
+        :src="nowPicturePath"
         style="width:initial;height:100vh"
       />
     </v-dialog>
@@ -75,6 +78,12 @@ export default Vue.extend({
       document.body.style.overflow = 'initial'
       document.body.style.height = 'initial'
     },
+    dialogChange (isPrev) {
+      this.dialog.index = (isPrev) ? this.dialog.index - 1 : this.dialog.index + 1
+
+      if (this.dialog.index > this.allFile.length - 1) this.dialog.index = 0
+      else if (this.dialog.index < 0) this.dialog.index = this.allFile.length - 1
+    },
     loadSuccess () {
       this.loadCounter++
 
@@ -97,6 +106,9 @@ export default Vue.extend({
   computed: {
     fileToSee () {
       return this.allFile.map(item => item.fileName)
+    },
+    nowPicturePath () {
+      return this.getFilePath(this.fileSee.concat(this.fileToSee)[this.dialog.index])
     }
   },
   created () {
@@ -112,7 +124,7 @@ export default Vue.extend({
     })
   },
   beforeDestroy () {
-    if (this.dialog.see) this.dialog.see = false
+    if (this.dialog.see) this.dialogClose()
   }
 })
 </script>
