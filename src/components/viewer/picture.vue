@@ -31,12 +31,24 @@
       @keydown.right.prevent="dialogChange()"
       @keydown.left.prevent="dialogChange(true)"
     >
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on }">
-          <v-btn color="primary" class="b__picture-viewer-tips" dark v-on="on">Help</v-btn>
-        </template>
-        <span>Help</span>
-      </v-tooltip>
+      <v-toolbar
+        class="b__picture-viewer__toolbar"
+        style="width: 200px;height: 130px"
+      >
+        <v-toolbar-title :cols="12">
+          {{dialog.length}} / {{fileSee.concat(fileToSee).length}}
+        </v-toolbar-title>
+
+        <div>
+          <v-text-field
+            :rules="locationField.rules"
+            v-model="locationField.value"
+            label="go image"
+            style="margin-top: 20px"
+          ></v-text-field>
+        </div>
+      </v-toolbar>
+
       <v-img
         contain
         :src="nowPicturePath"
@@ -61,28 +73,34 @@ export default Vue.extend({
       loadCounter: 0,
       dialog: {
         see: false,
-        index: 0
+        length: 1
       },
-      fileSee: []
+      fileSee: [],
+      locationField: {
+        rules: [
+          v => (!/\D/.test(v) && v <= this.allFile.length && v > 0) || `0 < input < ${this.allFile.length} && only number`
+        ],
+        value: 1
+      }
     }
   },
   methods: {
     dialogOpen (index) {
       this.dialog.see = true
-      this.dialog.index = index
+      this.dialog.length = index + 1
       document.body.style.overflow = 'hidden'
       document.body.style.height = '100vh'
     },
     dialogClose () {
-      this.dialog.index = 0
+      this.dialog.length = 1
       document.body.style.overflow = 'initial'
       document.body.style.height = 'initial'
     },
     dialogChange (isPrev) {
-      this.dialog.index = (isPrev) ? this.dialog.index - 1 : this.dialog.index + 1
+      this.dialog.length = (isPrev) ? this.dialog.length - 1 : this.dialog.length + 1
 
-      if (this.dialog.index > this.allFile.length - 1) this.dialog.index = 0
-      else if (this.dialog.index < 0) this.dialog.index = this.allFile.length - 1
+      if (this.dialog.length > this.allFile.length) this.dialog.length = 1
+      else if (this.dialog.length < 1) this.dialog.length = this.allFile.length
     },
     loadSuccess () {
       this.loadCounter++
@@ -101,6 +119,11 @@ export default Vue.extend({
   watch: {
     'dialog.see' () {
       if (!this.dialog.see) this.dialogClose()
+    },
+    'locationField.value' () {
+      if (typeof this.locationField.rules[0](this.locationField.value) !== 'string') {
+        this.dialog.length = this.locationField.value
+      }
     }
   },
   computed: {
@@ -108,7 +131,7 @@ export default Vue.extend({
       return this.allFile.map(item => item.fileName)
     },
     nowPicturePath () {
-      return this.getFilePath(this.fileSee.concat(this.fileToSee)[this.dialog.index])
+      return this.getFilePath(this.fileSee.concat(this.fileToSee)[this.dialog.length - 1])
     }
   },
   created () {
@@ -134,12 +157,16 @@ export default Vue.extend({
     background: #000
     overflow: hidden
     text-align: center
-    &-tips
+    &__toolbar
+      z-index: 10
       position: absolute
-      width: 10px
-      height: 10px
-      background: none
-      opacity: .5
-      left: 0
       top: 0
+      bottom: 0
+      left: 0
+      opacity: 0
+      transition: opacity .3s !important
+      &:hover
+        opacity: 1
+      .v-toolbar__content
+        display: block
 </style>
