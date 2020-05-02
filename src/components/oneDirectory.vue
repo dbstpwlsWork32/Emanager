@@ -9,48 +9,31 @@
     </v-banner>
 
     <v-tabs v-model="currentItem">
-      <v-tab v-if="fileSee.picture.length">Picture</v-tab>
-      <v-tab v-if="fileSee.video.length">Video</v-tab>
-      <v-tab v-if="fileSee.game.length">Game</v-tab>
+      <v-tab v-if="fileStat.picture.length">Picture</v-tab>
+      <v-tab v-if="fileStat.video.length">Video</v-tab>
+      <v-tab v-if="fileStat.game.length">Game</v-tab>
       <v-tab v-if="dir.length">Folder : {{dir.length}}</v-tab>
     </v-tabs>
 
     <v-tabs-items v-model="currentItem">
 
-      <v-tab-item v-if="fileSee.picture.length">
-        <v-progress-circular
-          :size="100"
-          :width="10"
-          color="red"
-          indeterminate
-          style="margin: 20px"
-          v-show="!loadSuccessCounter.picture"
-        />
-        <v-row style="margin: 0; width: 100%">
-          <template v-for="(fileName, index) in fileSee.picture">
-            <v-col :key="index" cols="3">
-              <v-img
-                :src="getFilePath(fileName)"
-                @load="loadSuccess('picture')"
-                @click="openPictureWatcherOpen(index)"
-                style="width:100%;cursor:pointer"
-              />
-            </v-col>
-          </template>
-        </v-row>
-      </v-tab-item>
+      <pictureViewer
+        v-if="fileStat.picture.length"
+        :allFile="fileStat.picture"
+        :nowPath="nowPath"
+      />
 
-      <v-tab-item v-if="fileSee.video.length">
-        <template v-for="(fileName, index) in fileSee.video">
-          <videoCard :src="getFilePath(fileName)" :key="index" />
+      <v-tab-item v-if="fileStat.video.length">
+        <template v-for="(fObj, index) in fileStat.video">
+          <videoCard :src="getFilePath(fObj.fileName)" :key="index" />
         </template>
       </v-tab-item>
 
-      <v-tab-item v-if="fileSee.game.length">
-        <template v-for="(fileName, index) in fileSee.game">
+      <v-tab-item v-if="fileStat.game.length">
+        <template v-for="(fObj, index) in fileStat.game">
           <v-btn
             :key="index"
-            @click="externalProcessDoit(fileName)"
+            @click="externalProcessDoit(fObj.fileName)"
           >
             {{fObj.fileName}}
           </v-btn>
@@ -60,7 +43,7 @@
       <v-tab-item
         v-if="dir.length"
         class="tab-item-wrapper"
-        style="min-height: 100vh"
+        style="min-height: 80vh"
       >
         <template v-for="(dir, index) in dir">
           <dirCard
@@ -71,26 +54,6 @@
       </v-tab-item>
 
     </v-tabs-items>
-
-    <v-dialog
-      v-if="pictureDialog.see"
-      v-model="pictureDialog.see"
-      hide-overlay
-      fullscreen
-      transition="dialog-transition"
-      content-class="b__picture-viewer"
-    >
-      <v-tooltip bottom>
-        <template v-slot:activator="{ on }">
-          <v-btn color="primary" class="b__picture-viewer-tips" dark v-on="on">Help</v-btn>
-        </template>
-        <span>Help</span>
-      </v-tooltip>
-      <img
-        :src="getFilePath(fileSee.picture.concat(fileToSee.picture)[pictureDialog.index])"
-        style="width:initial;height:100vh"
-      />
-    </v-dialog>
   </v-row>
 </template>
 
@@ -99,6 +62,7 @@ import Vue from 'vue'
 import { ipcRenderer, shell } from 'electron'
 import dirCard from '@/components/dirCard/dir'
 import videoCard from '@/components/dirCard/video'
+import pictureViewer from '@/components/viewer/picture'
 import path from 'path'
 
 export default Vue.extend({
@@ -112,22 +76,10 @@ export default Vue.extend({
       folderName: '',
       dirPath: [],
       currentItem: '',
-      fileToSee: {
-        video: [],
+      fileStat: {
         picture: [],
-        game: []
-      },
-      fileSee: {
         video: [],
-        picture: [],
         game: []
-      },
-      loadSuccessCounter: {
-        picture: 0
-      },
-      pictureDialog: {
-        see: false,
-        index: 0
       }
     }
   },
@@ -141,41 +93,17 @@ export default Vue.extend({
         this.nowPath = result.nowPath
         this.dirPath = result.dirPath
 
-        const rootName = this.$store.getters.rootTableName(this.tableId)
-        this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name).replace(/\\/g, '/')
-        this.loadSuccessCounter.picture = 0
-        if (this.pictureDialog.see) this.pictureDialog.see = false
-
-        this.fileToSee = {
-          video: [],
+        this.fileStat = {
           picture: [],
-          game: []
-        }
-        this.fileSee = {
           video: [],
-          picture: [],
           game: []
         }
         this.file.map(item => {
-          this.fileToSee[item.fileType].push(item.fileName)
+          this.fileStat[item.fileType].push(item)
         })
 
-        // picture numerically sort
-        const collator = new Intl.Collator(undefined, {
-          numeric: true,
-          sensitivity: 'base'
-        })
-        this.fileToSee.picture.sort(collator.compare, null, 2)
-
-        this.fileToSee.picture.splice(0, 8).map(item => {
-          this.fileSee.picture.push(item)
-        })
-        this.fileToSee.video.splice(0, 8).map(item => {
-          this.fileSee.video.push(item)
-        })
-        this.fileToSee.game.splice(0, 8).map(item => {
-          this.fileSee.game.push(item)
-        })
+        const rootName = this.$store.getters.rootTableName(this.tableId)
+        this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name).replace(/\\/g, '/')
       }
 
       ipcRenderer.send('db_oneDirRequest', { tableId, docId })
@@ -192,7 +120,7 @@ export default Vue.extend({
         })
       })
 
-      this.scrollEvent()
+      this.scrollEvent(true)
     },
     getFilePath (fileName) {
       const nowPath = `file:///${path.join(this.nowPath, fileName).replace(/\\/g, '/')}`
@@ -201,8 +129,11 @@ export default Vue.extend({
     externalProcessDoit (fileName) {
       shell.openItem(path.join(this.nowPath, fileName))
     },
-    scrollEvent () {
-      if (!(window.scrollY + window.innerHeight > document.body.scrollHeight - 200)) return false
+    scrollEvent (repeat) {
+      if (!(window.scrollY + window.innerHeight > document.body.scrollHeight - 200)) {
+        repeat = false
+        return false
+      }
 
       window.removeEventListener('scroll', this.scrollEvent)
       ipcRenderer.send('getChildDirDocs', {
@@ -221,31 +152,10 @@ export default Vue.extend({
           this.dir.push(childDir)
         }
         if (this.dirPath.length) {
+          if (repeat) this.scrollEvent()
           window.addEventListener('scroll', this.scrollEvent)
         }
       })
-    },
-    loadSuccess (type) {
-      if (type === 'picture') {
-        this.loadSuccessCounter.picture++
-
-        if (this.loadSuccessCounter.picture % 8 === 0) {
-          this.fileToSee.picture.splice(0, 8).map(item => {
-            this.fileSee.picture.push(item)
-          })
-        }
-      }
-    },
-    openPictureWatcherOpen (index) {
-      this.pictureDialog.see = true
-      this.pictureDialog.index = index
-      document.body.style.overflow = 'hidden'
-      document.body.style.height = '100vh'
-    },
-    openPictureWatcherClose () {
-      this.pictureDialog.index = 0
-      document.body.style.overflow = 'initial'
-      document.body.style.height = 'initial'
     }
   },
   computed: {
@@ -273,9 +183,6 @@ export default Vue.extend({
             }
           })
       }
-    },
-    'pictureDialog.see' () {
-      if (!this.pictureDialog.see) this.openPictureWatcherClose()
     }
   },
   created () {
@@ -290,7 +197,8 @@ export default Vue.extend({
   },
   components: {
     dirCard,
-    videoCard
+    videoCard,
+    pictureViewer
   }
 })
 </script>
@@ -299,16 +207,4 @@ export default Vue.extend({
   #oneDirectiory
     .v-tabs-items
       background: none !important
-  .b__picture-viewer
-    background: #000
-    overflow: hidden
-    text-align: center
-    &-tips
-      position: absolute
-      width: 20px
-      height: 20px
-      background: none
-      opacity: .5
-      left: 10%
-      top: 10%
 </style>
