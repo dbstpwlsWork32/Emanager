@@ -59,7 +59,6 @@
 
 <script>
 import Vue from 'vue'
-import path from 'path'
 import { ipcRenderer } from 'electron'
 
 export default Vue.extend({
@@ -116,35 +115,6 @@ export default Vue.extend({
     folderName () {
       return this.dir.name || this.dir.nowPath
     }
-  },
-  created () {
-    const makeThumnailAsFile = async () => {
-      const willVideoThumbnailPaths = []
-      for (const file of this.dir.file) {
-        if (
-          this.thumbnail.length + willVideoThumbnailPaths.length >= 3 &&
-          file.fileType === 'game'
-        ) break
-
-        if (file.fileType === 'picture') {
-          this.thumbnail.push(path.join(this.dir.nowPath, file.fileName))
-        } else if (file.fileType === 'video') {
-          willVideoThumbnailPaths.push(path.join(this.dir.nowPath, file.fileName))
-        }
-      }
-
-      if (willVideoThumbnailPaths.length) {
-        await fetch('http://localhost:443/videoThumbnail', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ data: willVideoThumbnailPaths })
-        })
-      }
-    }
-
-    if (!this.dir.file.length) makeThumnailAsFile()
   }
 })
 </script>

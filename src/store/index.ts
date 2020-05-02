@@ -85,7 +85,7 @@ export default new Vuex.Store({
 
         ipcRenderer.removeAllListeners('db_firstInsert-dir')
         commit('modifyByPath', { nowPath, replace: { isLoading: false, process: '', ...newDoc } })
-        commit('changeIsAllLoad', false)
+        commit('changeIsAllLoad', true)
       } catch (er) {
         throw new Error(`add dir : \n${er}`)
       }

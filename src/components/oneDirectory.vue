@@ -9,27 +9,35 @@
     </v-banner>
 
     <v-tabs v-model="currentItem">
-      <v-tab v-if="file.length">Files</v-tab>
-      <v-tab v-if="dir.length">Folder</v-tab>
+      <v-tab v-if="fileSee.picture.length">Picture</v-tab>
+      <v-tab v-if="fileSee.video.length">Video</v-tab>
+      <v-tab v-if="fileSee.game.length">Game</v-tab>
+      <v-tab v-if="dir.length">Folder : {{dir.length}}</v-tab>
     </v-tabs>
 
     <v-tabs-items v-model="currentItem">
-      <v-tab-item v-if="file.length">
-        <template v-for="(fObj, index) in file" style="position: sticky">
+
+      <v-tab-item v-if="fileSee.picture.length">
+        <template v-for="(fileName, index) in fileSee.picture">
           <v-img
-            v-if="fObj.fileType === 'picture'"
+            :src="getFilePath(fileName)"
             :key="index"
-            :src="getFilePath(fObj)"
-          ></v-img>
-          <videoCard
-            v-else-if="fObj.fileType === 'videoa'"
-            :key="index"
-            :src="getFilePath(fObj)"
-          />
+          >
+          </v-img>
+        </template>
+      </v-tab-item>
+
+      <v-tab-item v-if="fileSee.video.length">
+        <template v-for="(fileName, index) in fileSee.video">
+          <videoCard :src="getFilePath(fileName)" :key="index" />
+        </template>
+      </v-tab-item>
+
+      <v-tab-item v-if="fileSee.game.length">
+        <template v-for="(fileName, index) in fileSee.game">
           <v-btn
-            v-else-if="fObj.fileType === 'game'"
             :key="index"
-            @click="externalProcessDoit(fObj)"
+            @click="externalProcessDoit(fileName)"
           >
             {{fObj.fileName}}
           </v-btn>
@@ -48,6 +56,7 @@
             />
         </template>
       </v-tab-item>
+
     </v-tabs-items>
   </v-row>
 </template>
@@ -68,9 +77,18 @@ export default Vue.extend({
       overall: [],
       nowPath: '',
       folderName: '',
-      dirLength: 0,
       dirPath: [],
-      currentItem: 'now item'
+      currentItem: '',
+      fileToSee: {
+        video: [],
+        picture: [],
+        game: []
+      },
+      fileSee: {
+        video: [],
+        picture: [],
+        game: []
+      }
     }
   },
   props: ['tableId', 'docId'],
@@ -85,6 +103,32 @@ export default Vue.extend({
 
         const rootName = this.$store.getters.rootTableName(this.tableId)
         this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name)
+
+        this.fileToSee = {
+          video: [],
+          picture: [],
+          game: []
+        }
+        this.file.map(item => {
+          this.fileToSee[item.fileType].push(item.fileName)
+        })
+
+        // picture numerically sort
+        const collator = new Intl.Collator(undefined, {
+          numeric: true,
+          sensitivity: 'base'
+        })
+        this.fileToSee.picture.sort(collator.compare, null, 2)
+
+        this.fileToSee.picture.splice(0, 8).map(item => {
+          this.fileSee.picture.push(item)
+        })
+        this.fileToSee.video.splice(0, 8).map(item => {
+          this.fileSee.video.push(item)
+        })
+        this.fileToSee.game.splice(0, 8).map(item => {
+          this.fileSee.game.push(item)
+        })
       }
 
       ipcRenderer.send('db_oneDirRequest', { tableId, docId })
@@ -101,14 +145,17 @@ export default Vue.extend({
         })
       })
     },
-    getFilePath (fObj) {
-      return path.join(this.nowPath, fObj.fileName)
+    getFilePath (fileName) {
+      const nowPath = 'file:///' + path.join(this.nowPath, fileName).replace(/\\/, '/')
+      return nowPath
     },
-    externalProcessDoit (fObj) {
-      shell.openItem(path.join(this.nowPath, fObj.fileName))
+    externalProcessDoit (fileName) {
+      shell.openItem(path.join(this.nowPath, fileName))
     },
     scrollEvent () {
-      if (window.scrollY + window.innerHeight > document.body.scrollHeight - 400) {
+      if (!(window.scrollY + window.innerHeight > document.body.scrollHeight - 400)) return false
+
+      if (this.dirPath.length) {
         window.removeEventListener('scroll', this.scrollEvent)
         ipcRenderer.send('getChildDirDocs', {
           tableId: this.tableId,

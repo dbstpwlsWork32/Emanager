@@ -3,8 +3,13 @@ import dbTask from '../database/db'
 import GetDirStructure from '../database/modules/dirStructure'
 import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'
 
-interface NowDirList extends NEDBDirDocument {
-  tableId: string
+interface NowDirList {
+  nowPath: string;
+  overall: any;
+  dir: string[];
+  tableId: string;
+  _id: string;
+  user: any;
 }
 const getChildDirDocs = async (tableId: string, childList: string[]): Promise<NowDirList[]> => {
   let nowDirList: NowDirList[] = []
@@ -18,8 +23,7 @@ const getChildDirDocs = async (tableId: string, childList: string[]): Promise<No
       dir: childResult.dir,
       tableId: tableId,
       _id: childResult._id,
-      user: childResult.user,
-      file: childResult.file
+      user: childResult.user
     })
   }
 
