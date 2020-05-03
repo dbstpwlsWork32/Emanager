@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, ipcRenderer } from 'electron'
 import dbTask from '../database/db'
 import GetDirStructure from '../database/modules/dirStructure'
 import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'
@@ -128,7 +128,7 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, query }) => {
 
 ipcMain.on('tableModify', async (ev, { tableId, docId, replace }) => {
   await dbTask.childTable.ready(tableId)
-  await dbTask.childTable.update(tableId, docId, replace)
+  await dbTask.childTable.update(tableId, { _id: docId }, replace)
 
   ev.reply('tableModify', true)
 })
@@ -192,5 +192,22 @@ ipcMain.on('get_next_picture-list', async (ev, { tableId, query, nowPath, goPrev
   } catch (er) {
     console.log(`ipc : get_next_picture-list ERROR _id ${tableId} query : ${query}\n${er}`)
     ev.reply('get_next_picture-list', false)
+  }
+})
+
+ipcMain.on('docDelete', async (ev, { tableId, nowPath, isRoot }) => {
+  try {
+    if (isRoot) {
+      await dbTask.childTable.remove(tableId, {})
+      await dbTask.parentTable.remove({ _id: tableId })
+    } else {
+      await dbTask.childTable.remove(tableId, { _id: nowPath })
+      await dbTask.childTable.update(tableId, { dir: { $elemMatch: nowPath } }, { $pull: { dir: nowPath } }, { multi: true })
+    }
+
+    ev.reply('docDelete', true)
+  } catch (er) {
+    console.log(`ipc : docDelete ERROR _id ${tableId} query : ${nowPath}\n${er}`)
+    ev.reply('docDelete', false)
   }
 })

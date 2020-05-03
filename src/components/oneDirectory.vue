@@ -9,21 +9,36 @@
     </v-banner>
 
     <v-tabs v-model="currentItem">
+      <v-tab v-if="dir.length">Folder : {{dir.length}}</v-tab>
       <v-tab v-if="fileStat.picture.length">Picture</v-tab>
       <v-tab v-if="fileStat.video.length">Video</v-tab>
       <v-tab v-if="fileStat.game.length">Game</v-tab>
       <v-tab v-if="fileStat.audio.length">audio</v-tab>
-      <v-tab v-if="dir.length">Folder : {{dir.length}}</v-tab>
     </v-tabs>
 
     <v-tabs-items v-model="currentItem">
 
-      <pictureViewer
-        v-if="fileStat.picture.length"
-        :fileObjs="fileStat.picture"
-        :nowPath="nowPath"
-        :tableId="tableId"
-      />
+      <v-tab-item
+        v-if="dir.length"
+        class="tab-item-wrapper"
+      >
+        <v-row no-gutters>
+          <dirCard
+            v-for="(dir, index) in dir"
+            :dir="dir"
+            :key="index"
+            v-on:dirDelete="deleteDir"
+          />
+        </v-row>
+      </v-tab-item>
+
+      <v-tab-item v-if="fileStat.picture.length">
+        <pictureViewer
+          :fileObjs="fileStat.picture"
+          :nowPath="nowPath"
+          :tableId="tableId"
+        />
+      </v-tab-item>
 
       <v-tab-item v-if="fileStat.video.length">
         <template v-for="(fObj, index) in fileStat.video">
@@ -34,6 +49,7 @@
       <v-tab-item v-if="fileStat.game.length">
         <template v-for="(fObj, index) in fileStat.game">
           <v-btn
+            class="oneDirectory__button"
             :key="index"
             @click="externalProcessDoit(fObj.fileName)"
           >
@@ -51,19 +67,6 @@
           :src="getFilePath(fObj.fileName)"
           :key="index"
         ></audio>
-      </v-tab-item>
-
-      <v-tab-item
-        v-if="dir.length"
-        class="tab-item-wrapper"
-      >
-        <v-row no-gutters>
-          <dirCard
-            v-for="(dir, index) in dir"
-            :dir="dir"
-            :key="index"
-          />
-        </v-row>
       </v-tab-item>
 
     </v-tabs-items>
@@ -174,6 +177,9 @@ export default Vue.extend({
           else window.addEventListener('scroll', this.scrollEvent)
         }
       })
+    },
+    deleteDir (docId) {
+      this.dir.splice(this.dir.map(item => item._id).indexOf(docId), 1)
     }
   },
   computed: {
@@ -189,8 +195,10 @@ export default Vue.extend({
           tableId: this.dir.tableId,
           docId: this.dir._id,
           replace: {
-            user: {
-              rate: newVal
+            $set: {
+              user: {
+                rate: newVal
+              }
             }
           }
         })
@@ -251,4 +259,6 @@ export default Vue.extend({
     .v-tabs-items
       background: none !important
       width: 100%
+  .oneDirectory__button
+    margin-top: 10px
 </style>

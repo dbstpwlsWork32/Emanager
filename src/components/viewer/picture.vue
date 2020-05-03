@@ -1,5 +1,5 @@
 <template>
-  <v-tab-item>
+  <div>
     <v-progress-circular
       :size="100"
       :width="10"
@@ -61,14 +61,13 @@
         style="width:initial;height:100vh"
       />
     </v-dialog>
-  </v-tab-item>
+  </div>
 </template>
 
 <script>
 import Vue from 'vue'
 import path from 'path'
 import { ipcRenderer } from 'electron'
-import { prependListener } from 'cluster'
 
 export default Vue.extend({
   name: 'come__picture',

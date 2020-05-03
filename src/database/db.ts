@@ -10,9 +10,11 @@ const makeDbList = (tableName: string, opt: any = {}): Nedb => {
 }
 
 const db: any = {
-  rootTable: makeDbList('rootTable', { autoload: true })
+  rootTable: makeDbList('rootTable', { autoload: true }),
+  userData: makeDbList('userData', { autoload: true })
 }
 db.rootTable.loadDatabase()
+db.userData.loadDatabase()
 
 const parentTable = {
   async insert (model: RootTableModel): Promise<NEDBRootTable> {
@@ -26,6 +28,14 @@ const parentTable = {
   async find (query: any = {}): Promise<NEDBRootTable[]> {
     return await new Promise((resolve, reject) => {
       db.rootTable.find(query, (er: NodeJS.ErrnoException, docs: NEDBRootTable[]) => {
+        if (!er) resolve(docs)
+        else reject(er)
+      })
+    })
+  },
+  async remove(query: any) {
+    return await new Promise((resolve, reject) => {
+      db.rootTable.remove(query, (er: NodeJS.ErrnoException, docs: NEDBRootTable[]) => {
         if (!er) resolve(docs)
         else reject(er)
       })
@@ -76,9 +86,17 @@ const childTable = {
       })
     })
   },
-  async update (tableId: string, docId: string, replace: any): Promise<void> {
+  async update (tableId: string, query: any, replace: any, opt: any = {}): Promise<void> {
     return await new Promise((resolve, reject) => {
-      db[tableId].table.update({ _id: docId }, { $set: replace }, {}, (err: any, cn: number) => {
+      db[tableId].table.update(query, replace, opt, (err: any, cn: number) => {
+        if (err) reject(err)
+        else resolve()
+      })
+    })
+  },
+  async remove (tableId: string, query: any) {
+    return await new Promise((resolve, reject) => {
+      db[tableId].table.remove(query, (err: any) => {
         if (err) reject(err)
         else resolve()
       })
@@ -86,7 +104,24 @@ const childTable = {
   }
 }
 
+// userData handle
+interface UserDataTable<CK> {
+  like: {
+    1: string[],
+    2: string[],
+    3: string[],
+    4: string[],
+    5: string[]
+  },
+  collection: {
+    CK: string
+  }
+}
+const userDataTable = {
+}
+
 export default {
   parentTable,
-  childTable
+  childTable,
+  userDataTable
 }

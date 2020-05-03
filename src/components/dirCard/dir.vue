@@ -5,7 +5,26 @@
     elevation="20"
     :img='nowThumnail'
     class="b__dir-card"
+    @click.right="menuTask"
   >
+    <v-menu
+      v-model="showMenu"
+      :position-x="position.x"
+      :position-y="position.y"
+      absolute
+      offset-y
+    >
+      <v-list>
+        <v-list-item
+          v-for="(item, index) in menu"
+          :key="index"
+          @click="item.callback"
+        >
+          <v-list-item-title>{{ item.title }}</v-list-item-title>
+        </v-list-item>
+      </v-list>
+    </v-menu>
+
     <v-list-item
       three-line
       link
@@ -71,7 +90,22 @@ export default Vue.extend({
   data () {
     return {
       thumbnail: [],
-      nowThumnail: null
+      nowThumnail: null,
+      menu: [
+        {
+          title: 'Update',
+          callback: this.docUpdate
+        },
+        {
+          title: 'Delete',
+          callback: this.docDelete
+        }
+      ],
+      showMenu: false,
+      position: {
+        x: 0,
+        y: 0
+      }
     }
   },
   methods: {
@@ -87,8 +121,34 @@ export default Vue.extend({
         case 'game':
           result = 'mdi-gamepad-variant'
           break
+        case 'audio':
+          result = 'mdi-file-music'
+          break
       }
       return result
+    },
+    menuTask (e) {
+      e.preventDefault()
+      this.showMenu = false
+      this.position.x = e.clientX
+      this.position.y = e.clientY
+      this.$nextTick(() => {
+        this.showMenu = true
+      })
+    },
+    docDelete () {
+      const isRoot = this.$store.getters.rootTableName(this.dir.tableId).nowPath === this.dir.nowPath
+      ipcRenderer.send('docDelete', { tableId: this.dir.tableId, nowPath: this.dir.nowPath, isRoot })
+      ipcRenderer.once('docDelete', () => {
+        if (isRoot) {
+          this.$store.commit('deleteByPath', this.dir.nowPath)
+        } else {
+          this.$emit('dirDelete', this.dir._id)
+        }
+      })
+    },
+    docUpdate () {
+      console.log('asd')
     }
   },
   computed: {
@@ -101,8 +161,10 @@ export default Vue.extend({
           tableId: this.dir.tableId,
           docId: this.dir._id,
           replace: {
-            user: {
-              rate: newVal
+            $set: {
+              user: {
+                rate: newVal
+              }
             }
           }
         })
@@ -114,6 +176,9 @@ export default Vue.extend({
     folderName () {
       return this.dir.name || this.dir.nowPath
     }
+  },
+  beforeDestroy () {
+    this.showMenu = false
   }
 })
 </script>
@@ -123,6 +188,7 @@ export default Vue.extend({
     position: relative
     width: 200px
     margin: 10px
+  .b__dir-card
     &_addDir-open
       width: 100%
       border: 1px dashed #fff
