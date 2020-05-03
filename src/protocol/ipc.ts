@@ -94,6 +94,7 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, query }) => {
     file: any[];
     overall: any[];
     nowPath: any;
+    user: any
   }
 
   try {
@@ -113,6 +114,7 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, query }) => {
       dirPath: rootResult.dir,
       overall: rootResult.overall,
       file: rootResult.file,
+      user: rootResult.user,
       dir: nowDirList
     }
 
@@ -144,6 +146,25 @@ ipcMain.on('get_next_picture-list', async (ev, { tableId, query, nowPath, goPrev
       else if (index > rootResult.dir.length - 1) index = 0
       return index
     }
+    const checkExistPicture = (file: {
+      fileName: string, fileType: string, ctime: Date;
+      mtime: Date;
+    }[]): boolean => {
+      for (const nowFile of file) {
+        if (nowFile.fileType === 'picture') {
+          return true
+        }
+      }
+
+      return false
+    }
+    const throwResult = (result: NEDBDirDocument) => {
+      return {
+        _id: result._id,
+        file: result.file.filter(item => item.fileType === 'picture'),
+        nowPath: result.nowPath
+      }
+    }
 
     await dbTask.childTable.ready(tableId)
 
@@ -155,21 +176,11 @@ ipcMain.on('get_next_picture-list', async (ev, { tableId, query, nowPath, goPrev
     while (unFind) {
       const [resultDir]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { nowPath: rootResult.dir[nowIndex] })
       
-      let existPicture = false
-      for (const file of resultDir.file) {
-        if (file.fileType === 'picture') {
-          existPicture = true
-          break
-        }
-      }
+      let existPicture = checkExistPicture(resultDir.file)
       
       if (existPicture) {
         unFind = false
-        result = {
-          _id: resultDir._id,
-          file: resultDir.file.filter(item => item.fileType === 'picture'),
-          nowPath: resultDir.nowPath
-        }
+        result = throwResult(resultDir)
       } else {
         nowIndex = getPositionIndex(nowIndex)
       }

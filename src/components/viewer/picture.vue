@@ -68,6 +68,7 @@
 import Vue from 'vue'
 import path from 'path'
 import { ipcRenderer } from 'electron'
+import { prependListener } from 'cluster'
 
 export default Vue.extend({
   name: 'come__picture',

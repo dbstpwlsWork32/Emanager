@@ -73,6 +73,7 @@ export default Vue.extend({
       dir: [],
       file: [],
       overall: [],
+      user: {},
       nowPath: '',
       folderName: '',
       dirPath: [],
@@ -94,6 +95,7 @@ export default Vue.extend({
         this.overall = result.overall
         this.nowPath = result.nowPath
         this.dirPath = result.dirPath
+        this.user = result.user
 
         this.fileStat = {
           picture: [],
@@ -163,6 +165,25 @@ export default Vue.extend({
   computed: {
     rootAllLoad () {
       return this.$store.state.isAllLoad
+    },
+    rate: {
+      get: function () {
+        return this.dir.user.rate || 0
+      },
+      set: function (newVal) {
+        ipcRenderer.send('tableModify', {
+          tableId: this.dir.tableId,
+          docId: this.dir._id,
+          replace: {
+            user: {
+              rate: newVal
+            }
+          }
+        })
+        ipcRenderer.once('tableModify', rs => {
+          if (!rs) alert('update fail')
+        })
+      }
     }
   },
   watch: {
