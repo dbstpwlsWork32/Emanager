@@ -37,8 +37,8 @@
         class="b__picture-viewer__toolbar"
         style="width: 200px;height: 130px"
       >
-        <v-toolbar-title :cols="12">
-          {{dialog.length}} / {{dialog.allFile.length}}
+        <v-toolbar-title>
+          {{dialog.length}} / {{fileObjs.length}}
         </v-toolbar-title>
 
         <div>
@@ -48,6 +48,10 @@
             label="go image"
             style="margin-top: 20px"
           ></v-text-field>
+        </div>
+
+        <div>
+          <v-btn>go to folder</v-btn>
         </div>
       </v-toolbar>
 
@@ -68,7 +72,7 @@ import { ipcRenderer } from 'electron'
 export default Vue.extend({
   name: 'come__picture',
   props: {
-    allFile: Array,
+    fileObjs: Array,
     nowPath: String,
     tableId: String
   },
@@ -77,14 +81,12 @@ export default Vue.extend({
       loadCounter: 0,
       dialog: {
         see: false,
-        length: 1,
-        allFile: [],
-        nowPath: this.nowPath
+        length: 1
       },
       fileSee: [],
       locationField: {
         rules: [
-          v => (!/\D/.test(v) && v <= this.dialog.allFile.length && v > 0) || `0 < input < ${this.dialog.allFile.length} && only number`
+          v => (!/\D/.test(v) && v <= this.fileObjs.length && v > 0) || `0 < input < ${this.fileObjs.length} && only number`
         ],
         value: 1
       }
@@ -105,8 +107,8 @@ export default Vue.extend({
     dialogChange (isPrev) {
       this.dialog.length = (isPrev) ? this.dialog.length - 1 : this.dialog.length + 1
 
-      if (this.dialog.length > this.dialog.allFile.length) this.dialog.length = 1
-      else if (this.dialog.length < 1) this.dialog.length = this.dialog.allFile.length
+      if (this.dialog.length > this.fileObjs.length) this.dialog.length = 1
+      else if (this.dialog.length < 1) this.dialog.length = this.fileObjs.length
     },
     loadSuccess () {
       this.loadCounter++
@@ -117,9 +119,9 @@ export default Vue.extend({
         })
       }
     },
-    // garbage folder delete! dir is exist but no exist file folder
-    getFilePath (fileName, nowPath = this.nowPath) {
-      const filePath = `file:///${path.join(nowPath, fileName).replace(/\\/g, '/')}`
+    // 2. update folder
+    getFilePath (fileName) {
+      const filePath = `file:///${path.join(this.nowPath, fileName).replace(/\\/g, '/')}`
       return filePath
     },
     async changeDir (goPrev = false) {
@@ -127,7 +129,7 @@ export default Vue.extend({
       splitPath.splice(splitPath.length - 1, 1)
       const prevPath = splitPath.join(path.sep)
 
-      ipcRenderer.send('get_next_picture-list', { tableId: this.tableId, query: { nowPath: prevPath }, nowPath: this.dialog.nowPath, goPrev })
+      ipcRenderer.send('get_next_picture-list', { tableId: this.tableId, query: { nowPath: prevPath }, nowPath: this.nowPath, goPrev })
 
       const nextFileResult = await new Promise(resolve => {
         ipcRenderer.once('get_next_picture-list', (ev, result) => {
@@ -135,18 +137,24 @@ export default Vue.extend({
         })
       })
 
-      this.dialog._id = nextFileResult._id
-      const toDelete = this.dialog.allFile.length
+      this.$router.replace(`/openDir/${this.tableId}/${nextFileResult._id}`)
+    },
+    resetDocument () {
+      this.loadCounter = 0
+      this.dialog.length = 1
+      this.fileSee = []
+      this.locationField.value = 1
+
+      // picture numerically sort
       const collator = new Intl.Collator(undefined, {
         numeric: true,
         sensitivity: 'base'
       })
-      nextFileResult.file.map(item => item.fileName).sort(collator.compare, null, 2).map(item => {
-        this.dialog.allFile.push(item)
+      this.fileToSee.sort(collator.compare, null, 2)
+
+      this.fileToSee.splice(0, 8).map(item => {
+        this.fileSee.push(item)
       })
-      this.dialog.allFile.splice(0, toDelete)
-      this.dialog.nowPath = nextFileResult.nowPath
-      this.dialog.length = 1
     }
   },
   watch: {
@@ -157,29 +165,21 @@ export default Vue.extend({
       if (typeof this.locationField.rules[0](this.locationField.value) !== 'string') {
         this.dialog.length = parseInt(this.locationField.value)
       }
+    },
+    'fileObjs' () {
+      this.resetDocument()
     }
   },
   computed: {
     fileToSee () {
-      return this.allFile.map(item => item.fileName)
+      return this.fileObjs.map(item => item.fileName)
     },
     nowPicturePath () {
-      return this.getFilePath(this.dialog.allFile[this.dialog.length - 1], this.dialog.nowPath)
+      return this.getFilePath(this.fileSee.concat(this.fileToSee)[this.dialog.length - 1])
     }
   },
   created () {
-    // picture numerically sort
-    const collator = new Intl.Collator(undefined, {
-      numeric: true,
-      sensitivity: 'base'
-    })
-    this.fileToSee.sort(collator.compare, null, 2).map(item => {
-      this.dialog.allFile.push(item)
-    })
-
-    this.fileToSee.splice(0, 8).map(item => {
-      this.fileSee.push(item)
-    })
+    this.resetDocument()
   },
   beforeDestroy () {
     if (this.dialog.see) this.dialogClose()

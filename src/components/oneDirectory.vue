@@ -19,7 +19,7 @@
 
       <pictureViewer
         v-if="fileStat.picture.length"
-        :allFile="fileStat.picture"
+        :fileObjs="fileStat.picture"
         :nowPath="nowPath"
         :tableId="tableId"
       />
