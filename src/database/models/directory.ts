@@ -11,8 +11,9 @@ export interface DirDocumentModel {
     ctime: Date;
     mtime: Date;
   }[];
-  user?: any
-  isRoot?: boolean
+  user?: any;
+  isRoot?: boolean;
+  name?: string;
 }
 
 export interface RootTableModel {

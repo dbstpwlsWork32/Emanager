@@ -1,8 +1,7 @@
-import { ipcMain, BrowserWindow, ipcRenderer } from 'electron'
+import { ipcMain } from 'electron'
 import dbTask from '../database/db'
 import GetDirStructure from '../database/modules/dirStructure'
 import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'
-import db from '../database/db'
 
 interface NowDirList {
   nowPath: string;
@@ -207,7 +206,44 @@ ipcMain.on('docDelete', async (ev, { tableId, nowPath, isRoot }) => {
 
     ev.reply('docDelete', true)
   } catch (er) {
-    console.log(`ipc : docDelete ERROR _id ${tableId} query : ${nowPath}\n${er}`)
+    console.log(`ipc : docDelete ERROR _id ${tableId} nowPath : ${nowPath}\n${er}`)
     ev.reply('docDelete', false)
+  }
+})
+
+ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
+  // userDataTable warm
+  try {
+    const nowPathRead = new GetDirStructure(nowPath)
+    const readResult = await nowPathRead.promise_readDirStructure(true)
+    const allDoc = await dbTask.childTable.find(tableId, { nowPath: { $regex: new RegExp('^'+nowPath.replace(/\\/g, '\\\\')) } })
+    const allDocMapNowPath = allDoc.map(item => item.nowPath)
+
+    for (const oneDir of readResult) {
+      const indexOf = allDocMapNowPath.indexOf(oneDir.nowPath)
+      if (indexOf !== -1) {
+        const [existDoc] = allDoc.splice(indexOf, 1)
+        allDocMapNowPath.splice(indexOf, 1)
+
+        let overlapKey: any = { user: existDoc.user }
+        if (existDoc.isRoot) {
+          overlapKey.isRoot = true
+          overlapKey.name = existDoc.name
+        }
+
+        await dbTask.childTable.update(tableId, { nowPath: oneDir.nowPath }, Object.assign(oneDir, overlapKey))
+      } else {
+        await dbTask.childTable.insert(tableId, [{ ...oneDir, user: {} }])
+      }
+    }
+
+    for (const removeDoc of allDoc) {
+      await dbTask.childTable.remove(tableId, { _id: removeDoc._id })
+    }
+  
+    ev.reply('docSync', true)
+  } catch (er) {
+    console.log(`ipc : docSync ERROR _id ${tableId} nowPath : ${nowPath}\n${er}`)
+    ev.reply('docSync', false)
   }
 })

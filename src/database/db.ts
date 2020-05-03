@@ -123,5 +123,6 @@ const userDataTable = {
 export default {
   parentTable,
   childTable,
-  userDataTable
+  userDataTable,
+  db
 }

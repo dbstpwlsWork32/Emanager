@@ -72,6 +72,25 @@
         </v-list-item-subtitle>
       </v-list-item-content>
     </v-list-item>
+
+    <v-dialog
+      v-model="syncDialog"
+      width="300"
+    >
+      <v-card
+        color="primary"
+        dark
+      >
+        <v-card-text>
+          Please stand by
+          <v-progress-linear
+            indeterminate
+            color="white"
+            class="mb-0"
+          ></v-progress-linear>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
@@ -105,7 +124,8 @@ export default Vue.extend({
       position: {
         x: 0,
         y: 0
-      }
+      },
+      syncDialog: false
     }
   },
   methods: {
@@ -138,6 +158,7 @@ export default Vue.extend({
     },
     docDelete () {
       const isRoot = this.$store.getters.rootTableName(this.dir.tableId).nowPath === this.dir.nowPath
+      this.syncDialog = true
       ipcRenderer.send('docDelete', { tableId: this.dir.tableId, nowPath: this.dir.nowPath, isRoot })
       ipcRenderer.once('docDelete', () => {
         if (isRoot) {
@@ -145,10 +166,14 @@ export default Vue.extend({
         } else {
           this.$emit('dirDelete', this.dir._id)
         }
+        this.syncDialog = false
       })
     },
     docUpdate () {
-      console.log('asd')
+      ipcRenderer.send('docSync', { tableId: this.dir.tableId, nowPath: this.dir.nowPath })
+      ipcRenderer.once('docSync', () => {
+        this.syncDialog = false
+      })
     }
   },
   computed: {
