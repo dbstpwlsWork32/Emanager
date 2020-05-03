@@ -12,6 +12,7 @@
       <v-tab v-if="fileStat.picture.length">Picture</v-tab>
       <v-tab v-if="fileStat.video.length">Video</v-tab>
       <v-tab v-if="fileStat.game.length">Game</v-tab>
+      <v-tab v-if="fileStat.audio.length">audio</v-tab>
       <v-tab v-if="dir.length">Folder : {{dir.length}}</v-tab>
     </v-tabs>
 
@@ -42,16 +43,27 @@
       </v-tab-item>
 
       <v-tab-item
+        v-if="fileStat.audio.length"
+      >
+        <audio
+          v-for="(fObj, index) in fileStat.audio"
+          controls
+          :src="getFilePath(fObj.fileName)"
+          :key="index"
+        ></audio>
+      </v-tab-item>
+
+      <v-tab-item
         v-if="dir.length"
         class="tab-item-wrapper"
-        style="min-height: 80vh"
       >
-        <template v-for="(dir, index) in dir">
+        <v-row no-gutters>
           <dirCard
+            v-for="(dir, index) in dir"
             :dir="dir"
             :key="index"
           />
-        </template>
+        </v-row>
       </v-tab-item>
 
     </v-tabs-items>
@@ -81,7 +93,8 @@ export default Vue.extend({
       fileStat: {
         picture: [],
         video: [],
-        game: []
+        game: [],
+        audio: []
       },
       bindScroll: false
     }
@@ -100,7 +113,8 @@ export default Vue.extend({
         this.fileStat = {
           picture: [],
           video: [],
-          game: []
+          game: [],
+          audio: []
         }
         this.file.map(item => {
           this.fileStat[item.fileType].push(item)
@@ -236,4 +250,5 @@ export default Vue.extend({
   #oneDirectiory
     .v-tabs-items
       background: none !important
+      width: 100%
 </style>

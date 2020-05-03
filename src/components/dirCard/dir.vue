@@ -1,60 +1,59 @@
 <template>
-  <div class="b__dir-card">
-    <v-card
-      :loading="dir.isLoading"
-      :disabled="dir.isLoading"
-      elevation="20"
-      :img='nowThumnail'
+  <v-card
+    :loading="dir.isLoading"
+    :disabled="dir.isLoading"
+    elevation="20"
+    :img='nowThumnail'
+    class="b__dir-card"
+  >
+    <v-list-item
+      three-line
+      link
+      :to="`/openDir/${dir.tableId}/${dir._id}`"
     >
-      <v-list-item
-        three-line
-        link
-        :to="`/openDir/${dir.tableId}/${dir._id}`"
-      >
-        <v-list-item-content>
-          <div
-            class="overline mb-4"
-            v-if="dir.process"
-          >{{dir.process}}</div>
-          <v-list-item-title>{{folderName}}</v-list-item-title>
-          <v-list-item-subtitle>{{dir.nowPath}}</v-list-item-subtitle>
-        </v-list-item-content>
-      </v-list-item>
+      <v-list-item-content>
+        <div
+          class="overline mb-4"
+          v-if="dir.process"
+        >{{dir.process}}</div>
+        <v-list-item-title>{{folderName}}</v-list-item-title>
+        <v-list-item-subtitle>{{dir.nowPath}}</v-list-item-subtitle>
+      </v-list-item-content>
+    </v-list-item>
 
-      <v-divider class="mx-4"></v-divider>
+    <v-divider class="mx-4"></v-divider>
 
-      <v-list-item>
-        <v-list-item-content>
-          <v-list-item-title>
-            <v-tooltip
-              v-for="(type, index) in dir.overall"
-              :key="index"
-              top
+    <v-list-item>
+      <v-list-item-content>
+        <v-list-item-title>
+          <v-tooltip
+            v-for="(type, index) in dir.overall"
+            :key="index"
+            top
+          >
+            <template
+              v-slot:activator="{ on }"
             >
-              <template
-                v-slot:activator="{ on }"
-              >
-                <v-icon v-on="on">{{getIconTextByType(type.type)}}</v-icon>
-              </template>
-              <span>{{type.count}}</span>
-            </v-tooltip>
-          </v-list-item-title>
-          <v-list-item-subtitle v-if="this.dir.user.rate !== false">
-            <v-rating
-              v-model="rate"
-              dense
-              hover
-              size="20"
-              full-icon="mdi-heart"
-              empty-icon="mdi-heart-outline"
-              background-color="grey lighten-1"
-              color="red lighten-3"
-            ></v-rating>
-          </v-list-item-subtitle>
-        </v-list-item-content>
-      </v-list-item>
-    </v-card>
-  </div>
+              <v-icon v-on="on">{{getIconTextByType(type.type)}}</v-icon>
+            </template>
+            <span>{{type.count}}</span>
+          </v-tooltip>
+        </v-list-item-title>
+        <v-list-item-subtitle v-if="this.dir.user.rate !== false">
+          <v-rating
+            v-model="rate"
+            dense
+            hover
+            size="20"
+            full-icon="mdi-heart"
+            empty-icon="mdi-heart-outline"
+            background-color="grey lighten-1"
+            color="red lighten-3"
+          ></v-rating>
+        </v-list-item-subtitle>
+      </v-list-item-content>
+    </v-list-item>
+  </v-card>
 </template>
 
 <script>
@@ -124,7 +123,6 @@ export default Vue.extend({
     position: relative
     width: 200px
     margin: 10px
-    float: left
     &_addDir-open
       width: 100%
       border: 1px dashed #fff
