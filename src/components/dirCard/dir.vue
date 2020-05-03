@@ -166,13 +166,18 @@ export default Vue.extend({
         } else {
           this.$emit('dirDelete', this.dir._id)
         }
-        this.syncDialog = false
+        this.$nextTick(() => {
+          this.syncDialog = false
+        })
       })
     },
     docUpdate () {
+      this.syncDialog = true
       ipcRenderer.send('docSync', { tableId: this.dir.tableId, nowPath: this.dir.nowPath })
       ipcRenderer.once('docSync', () => {
-        this.syncDialog = false
+        this.$nextTick(() => {
+          this.syncDialog = false
+        })
       })
     }
   },
