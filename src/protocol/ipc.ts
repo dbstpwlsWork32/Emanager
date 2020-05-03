@@ -2,6 +2,7 @@ import { ipcMain, BrowserWindow } from 'electron'
 import dbTask from '../database/db'
 import GetDirStructure from '../database/modules/dirStructure'
 import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'
+import db from '../database/db'
 
 interface NowDirList {
   nowPath: string;
@@ -139,11 +140,11 @@ ipcMain.on('getChildDirDocs', async (ev, { tableId, childList }) => {
 
 ipcMain.on('get_next_picture-list', async (ev, { tableId, query, nowPath, goPrev }) => {
   try {
-    const getPositionIndex = (index: number): number => {
+    const getPositionIndex = (dirLength: number, index: number): number => {
       index = (!goPrev) ? index + 1 : index - 1
 
-      if (index < 0) index = rootResult.dir.length - 1
-      else if (index > rootResult.dir.length - 1) index = 0
+      if (index < 0) index = dirLength - 1
+      else if (index > dirLength - 1) index = 0
       return index
     }
     const checkExistPicture = (file: {
@@ -166,25 +167,26 @@ ipcMain.on('get_next_picture-list', async (ev, { tableId, query, nowPath, goPrev
       }
     }
 
-    await dbTask.childTable.ready(tableId)
+    const existPictureDocs = await dbTask.childTable.find(
+      tableId,
+      {
+        $where () {
+          return checkExistPicture(this.file)
+        }
+      },
+      [
+        {
+          sort: {
+            nowPath: 1
+          }
+        }
+      ]
+    )
 
-    const [rootResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, query)
+    const nowDocIndex = existPictureDocs.map(item => item.nowPath).indexOf(nowPath)
+    const index = getPositionIndex(existPictureDocs.length, nowDocIndex)
 
-    let nowIndex = getPositionIndex(rootResult.dir.indexOf(nowPath))
-    let unFind = true
-    let result: any = []
-    while (unFind) {
-      const [resultDir]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { nowPath: rootResult.dir[nowIndex] })
-      
-      let existPicture = checkExistPicture(resultDir.file)
-      
-      if (existPicture) {
-        unFind = false
-        result = throwResult(resultDir)
-      } else {
-        nowIndex = getPositionIndex(nowIndex)
-      }
-    }
+    const result = throwResult(existPictureDocs[index])
 
     ev.reply('get_next_picture-list', result)
   } catch (er) {
