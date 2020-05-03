@@ -165,7 +165,11 @@ ipcMain.on('get_next_picture-list', async (ev, { tableId, query, nowPath, goPrev
       
       if (existPicture) {
         unFind = false
-        result = { _id: resultDir._id }
+        result = {
+          _id: resultDir._id,
+          file: resultDir.file.filter(item => item.fileType === 'picture'),
+          nowPath: resultDir.nowPath
+        }
       } else {
         nowIndex = getPositionIndex(nowIndex)
       }

@@ -125,8 +125,7 @@ export default Vue.extend({
       this.scrollEvent(true)
     },
     getFilePath (fileName) {
-      const nowPath = `file:///${path.join(this.nowPath, fileName).replace(/\\/g, '/')}`
-      return nowPath
+      return `file:///${path.join(this.nowPath, fileName).replace(/\\/g, '/').replace('#', '%23').replace(/\s/g, '%20')}`
     },
     externalProcessDoit (fileName) {
       shell.openItem(path.join(this.nowPath, fileName))
@@ -200,6 +199,9 @@ export default Vue.extend({
           }
         })
     }
+  },
+  beforeDestroy () {
+    window.removeEventListener('scroll', this.scrollEvent)
   },
   components: {
     dirCard,
