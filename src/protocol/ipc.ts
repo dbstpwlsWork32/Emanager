@@ -200,7 +200,7 @@ ipcMain.on('docDelete', async (ev, { tableId, nowPath, isRoot }) => {
       await dbTask.childTable.remove(tableId, {})
       await dbTask.parentTable.remove({ _id: tableId })
     } else {
-      await dbTask.childTable.remove(tableId, { _id: nowPath })
+      await dbTask.childTable.remove(tableId, { nowPath: nowPath })
       await dbTask.childTable.update(tableId, { dir: { $elemMatch: nowPath } }, { $pull: { dir: nowPath } }, { multi: true })
     }
 

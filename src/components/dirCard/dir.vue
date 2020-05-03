@@ -75,6 +75,7 @@
 
     <v-dialog
       v-model="syncDialog"
+      persistent
       width="300"
     >
       <v-card
