@@ -23,7 +23,8 @@ export default new Vuex.Store({
     return {
       rootTableList: [],
       isAllLoad: false,
-      isFullScreen: false
+      isFullScreen: false,
+      appData: ''
     }
   },
   mutations: {
@@ -64,7 +65,7 @@ export default new Vuex.Store({
             // eslint-disable-next-line
             commit('add', { ...nowTableRoot })
           }
-          commit('changeIsAllLoad', true)
+          return true
         }
       } catch (er) {
         throw `actions.load error\n ${er}`

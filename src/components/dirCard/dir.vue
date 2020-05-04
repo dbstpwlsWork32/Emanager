@@ -3,7 +3,7 @@
     :loading="dir.isLoading"
     :disabled="dir.isLoading"
     elevation="20"
-    :img='nowThumnail'
+    :img='nowThumbnail'
     class="b__dir-card"
     @click.right="menuTask"
   >
@@ -110,8 +110,7 @@ export default Vue.extend({
   },
   data () {
     return {
-      thumbnail: [],
-      nowThumnail: null,
+      nowThumbnail: null,
       menu: [
         {
           title: 'Update',
