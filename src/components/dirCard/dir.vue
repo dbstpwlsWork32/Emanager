@@ -76,6 +76,7 @@
     <v-dialog
       v-model="syncDialog"
       persistent
+      hide-overlay
       width="300"
     >
       <v-card
@@ -158,18 +159,36 @@ export default Vue.extend({
       })
     },
     docDelete () {
-      const isRoot = this.$store.getters.rootTableName(this.dir.tableId).nowPath === this.dir.nowPath
+      const rootPath = this.$store.getters.rootTableName(this.dir.tableId).nowPath
+      const isRoot = rootPath === this.dir.nowPath
+
       this.syncDialog = true
-      ipcRenderer.send('docDelete', { tableId: this.dir.tableId, nowPath: this.dir.nowPath, isRoot })
+      ipcRenderer.send('docDelete', { tableId: this.dir.tableId, nowPath: this.dir.nowPath, isRoot, rootPath })
       ipcRenderer.once('docDelete', () => {
+        this.syncDialog = false
         if (isRoot) {
           this.$store.commit('deleteByPath', this.dir.nowPath)
         } else {
-          this.$emit('dirDelete', this.dir._id)
+          const rootOverall = this.$store.getters.rootOverall(this.dir.tableId)
+          const thisOverallTypeList = this.dir.overall.map(item => item.type)
+
+          const newRootOverall = rootOverall.map(item => {
+            const index = thisOverallTypeList.indexOf(item.type)
+            if (index !== -1) {
+              return {
+                type: item.type,
+                count: (item.count - this.dir.overall[index].count)
+              }
+            } else {
+              return item
+            }
+          })
+
+          this.$store.commit('modifyByPath', { nowPath: rootPath, replace: { overall: newRootOverall } })
+          this.$nextTick(() => {
+            this.$emit('dirDelete', this.dir._id)
+          })
         }
-        this.$nextTick(() => {
-          this.syncDialog = false
-        })
       })
     },
     docUpdate () {
@@ -210,6 +229,7 @@ export default Vue.extend({
   },
   beforeDestroy () {
     this.showMenu = false
+    this.syncDialog = false
   }
 })
 </script>

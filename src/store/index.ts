@@ -96,13 +96,19 @@ export default new Vuex.Store({
     }
   },
   getters: {
-    rootTableName: state =>{
+    rootTableName: state => {
       return (tableId: string) => {
         const index = state.rootTableList.map((item: any) => item.tableId).indexOf(tableId)
         return {
           nowPath: state.rootTableList[index].nowPath,
           name: state.rootTableList[index].name
         }
+      }
+    },
+    rootOverall: state => {
+      return (tableId: string) => {
+        const index = state.rootTableList.map((item: any) => item.tableId).indexOf(tableId)
+        return state.rootTableList[index].overall
       }
     }
   }

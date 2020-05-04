@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import dbTask from '../database/db'
 import GetDirStructure from '../database/modules/dirStructure'
 import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'
+import path from 'path'
 
 interface NowDirList {
   nowPath: string;
@@ -28,6 +29,67 @@ const getChildDirDocs = async (tableId: string, childList: string[]): Promise<No
   }
 
   return nowDirList
+}
+
+interface overall {
+  type: string,
+  count: number
+}
+const docDeleteRelateTask = async (
+  tableId: string,
+  rootPath: string,
+  nowPath: string,
+  isNowPathRemove: boolean,
+  nowPathTakeOutOverall: overall[] = []
+): Promise<void> => {
+  if (isNowPathRemove && nowPathTakeOutOverall.length) throw new Error(`docDeleteRelateTask\nYou cannot set both isNowPathRemove and nowPathTakeOutOverall`)
+
+  const makeOverall = async (parentPath: string): Promise<overall[]> => {
+    const [{ overall: parentOverall }] = await dbTask.childTable.find(tableId, { nowPath: parentPath })
+
+    return parentOverall.map(item => {
+      const index = nowPathOverallTypeList.indexOf(item.type)
+
+      if (index === -1 ) return item
+      else {
+        return {
+          type: item.type,
+          count: item.count - nowPathOverall[index].count
+        }
+      }
+    })
+  }
+  const overallAndDirTask = async (parentPath: string): Promise<void> => {
+    // update query setting
+    let newOverall = await makeOverall(parentPath)
+    newOverall = newOverall.filter(item => item.count)
+
+    const updateQuery = {
+      ...(isNowPathRemove && { $pull: { dir: nowPath } }),
+      $set: { overall: newOverall }
+    }
+
+    await dbTask.childTable.update(tableId, { nowPath: parentPath }, updateQuery)
+  }
+
+  let nowPathOverall: overall[] = []
+  if (isNowPathRemove) {
+    const [nowPathDoc] = await dbTask.childTable.find(tableId, { nowPath })
+    nowPathOverall = nowPathDoc.overall
+  } else nowPathOverall = nowPathTakeOutOverall
+
+  const nowPathOverallTypeList = nowPathOverall.map(item => item.type)
+  const parentDirList = nowPath.replace(rootPath + path.sep, '').split(path.sep)
+  parentDirList.splice(parentDirList.length - 1, 1)
+
+  // root dir update
+  await overallAndDirTask(rootPath)
+  // parent dir update
+  for (const parentDir of parentDirList) {
+    await overallAndDirTask(path.join(rootPath, parentDir))
+  }
+  if (isNowPathRemove) await dbTask.childTable.remove(tableId, { nowPath: nowPath })
+  else await overallAndDirTask(nowPath)
 }
 
 ipcMain.on('db_firstInsert-dir', async (ev, args) => {
@@ -194,14 +256,13 @@ ipcMain.on('get_next_picture-list', async (ev, { tableId, query, nowPath, goPrev
   }
 })
 
-ipcMain.on('docDelete', async (ev, { tableId, nowPath, isRoot }) => {
+ipcMain.on('docDelete', async (ev, { tableId, nowPath, isRoot, rootPath }) => {
   try {
     if (isRoot) {
       await dbTask.childTable.remove(tableId, {})
       await dbTask.parentTable.remove({ _id: tableId })
     } else {
-      await dbTask.childTable.remove(tableId, { nowPath: nowPath })
-      await dbTask.childTable.update(tableId, { dir: { $elemMatch: nowPath } }, { $pull: { dir: nowPath } }, { multi: true })
+      await docDeleteRelateTask(tableId, rootPath, nowPath, true)
     }
 
     ev.reply('docDelete', true)
