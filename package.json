@@ -17,8 +17,10 @@
   "main": "background.js",
   "dependencies": {
     "@types/express": "^4.17.6",
+    "@types/mkdirp": "^1.0.0",
     "chai-as-promised": "^7.1.1",
     "express": "^4.17.1",
+    "mkdirp": "^1.0.4",
     "nedb": "^1.8.0",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",

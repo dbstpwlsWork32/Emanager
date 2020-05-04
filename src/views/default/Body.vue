@@ -10,15 +10,14 @@
 
 <script>
 import Vue from 'vue'
-import { remote } from 'electron'
 import DataStore from 'nedb'
 import path from 'path'
+import { remote } from 'electron'
 
 export default Vue.extend({
   name: 'Body',
   created () {
     if (!this.$store.state.rootTableList.length) {
-      this.$store.state.appData = remote.app.getPath('appData')
       this.$store.dispatch('load')
         .then(async () => {
           Vue.prototype.$db = {}

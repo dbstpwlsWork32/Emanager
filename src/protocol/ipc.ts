@@ -7,8 +7,8 @@ import path from 'path'
 interface NowDirList {
   nowPath: string;
   overall: any;
-  dir: string[];
   tableId: string;
+  file: any[];
   _id: string;
   user: any;
 }
@@ -18,13 +18,20 @@ const getChildDirDocs = async (tableId: string, childList: string[]): Promise<No
   for (const dirPath of childList) {
     const [childResult]: NEDBDirDocument[] = await dbTask.childTable.find(tableId, { nowPath: dirPath })
 
+    let thumbnailFile = []
+    for (const file of childResult.file) {
+      if (file.fileType === 'picture' || file.fileType === 'video') {
+        thumbnailFile.push(file)
+        break
+      }
+    }
     nowDirList.push({
       nowPath: childResult.nowPath,
       overall: childResult.overall,
-      dir: childResult.dir,
       tableId: tableId,
       _id: childResult._id,
-      user: childResult.user
+      user: childResult.user,
+      file: thumbnailFile
     })
   }
 

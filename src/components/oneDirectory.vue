@@ -24,9 +24,9 @@
       >
         <v-row no-gutters>
           <dirCard
-            v-for="(dir, index) in dir"
+            v-for="dir in dir"
             :dir="dir"
-            :key="index"
+            :key="dir._id"
             v-on:dirDelete="deleteDir"
           />
         </v-row>

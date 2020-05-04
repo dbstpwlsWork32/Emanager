@@ -23,8 +23,7 @@ export default new Vuex.Store({
     return {
       rootTableList: [],
       isAllLoad: false,
-      isFullScreen: false,
-      appData: ''
+      isFullScreen: false
     }
   },
   mutations: {

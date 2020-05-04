@@ -99,9 +99,10 @@
 <script>
 import Vue from 'vue'
 import { ipcRenderer } from 'electron'
+import { ThmbnailDir } from './thumbnail'
 
 export default Vue.extend({
-  name: 'come__oneDirectory',
+  name: 'come__oneDirectory-simple',
   props: {
     dir: {
       type: Object,
@@ -224,6 +225,20 @@ export default Vue.extend({
     },
     folderName () {
       return this.dir.name || this.dir.nowPath
+    }
+  },
+  async created () {
+    const overallType = this.dir.overall.map(item => item.type)
+    if (this.dir.file.length && (overallType.indexOf('picture') !== -1 || overallType.indexOf('video') !== -1)) {
+      const thumbnail = new ThmbnailDir({
+        tableId: this.dir.tableId,
+        docId: this.dir._id,
+        nowPath: this.dir.nowPath,
+        file: this.dir.file
+      })
+      const thumbnailPath = await thumbnail.make()
+      if (thumbnailPath) this.nowThumbnail = thumbnailPath.replace(/\\/g, '/')
+      else this.nowThumbnail = null
     }
   },
   beforeDestroy () {
