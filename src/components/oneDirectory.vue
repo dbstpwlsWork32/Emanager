@@ -98,8 +98,7 @@ export default Vue.extend({
         video: [],
         game: [],
         audio: []
-      },
-      bindScroll: false
+      }
     }
   },
   props: ['tableId', 'docId'],
@@ -141,7 +140,7 @@ export default Vue.extend({
         })
       })
 
-      this.scrollEvent(true)
+      if (this.dirPath.length) this.scrollEvent(true)
     },
     getFilePath (fileName) {
       return `file:///${path.join(this.nowPath, fileName).replace(/\\/g, '/').replace('#', '%23').replace(/\s/g, '%20')}`
@@ -150,8 +149,7 @@ export default Vue.extend({
       shell.openItem(path.join(this.nowPath, fileName))
     },
     scrollEvent (repeat) {
-      if (!(window.scrollY + window.innerHeight > document.body.scrollHeight - 400)) {
-        repeat = false
+      if (window.scrollY + window.innerHeight <= document.documentElement.scrollHeight - 400) {
         return false
       }
 
@@ -168,14 +166,13 @@ export default Vue.extend({
             name: path.parse(item.nowPath).base
           }
         })
-        for (const childDir of result) {
-          this.dir.push(childDir)
-        }
-        if (this.dirPath.length) {
-          this.bindScroll = true
-          if (repeat) this.scrollEvent()
-          else window.addEventListener('scroll', this.scrollEvent)
-        }
+        this.dir = this.dir.concat(result)
+        this.$nextTick(() => {
+          if (this.dirPath.length) {
+            if (repeat) this.scrollEvent(repeat)
+            window.addEventListener('scroll', this.scrollEvent)
+          }
+        })
       })
     },
     deleteDir (docId) {
@@ -212,35 +209,17 @@ export default Vue.extend({
     '$route' () {
       if (this.rootAllLoad === true) {
         this.resetDocument(this.tableId, this.docId)
-          .then(() => {
-            if (this.dirPath.length !== 0 && !this.bindScroll) {
-              this.bindScroll = true
-              window.addEventListener('scroll', this.scrollEvent)
-            }
-          })
       }
     },
     'rootAllLoad' (to) {
       if (to === true) {
         this.resetDocument(this.tableId, this.docId)
-          .then(() => {
-            if (this.dirPath.length !== 0 && !this.bindScroll) {
-              this.bindScroll = true
-              window.addEventListener('scroll', this.scrollEvent)
-            }
-          })
       }
     }
   },
   created () {
     if (this.rootAllLoad === true) {
       this.resetDocument(this.tableId, this.docId)
-        .then(() => {
-          if (this.dirPath.length !== 0 && !this.bindScroll) {
-            this.bindScroll = true
-            window.addEventListener('scroll', this.scrollEvent)
-          }
-        })
     }
   },
   beforeDestroy () {
