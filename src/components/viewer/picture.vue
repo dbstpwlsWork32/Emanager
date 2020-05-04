@@ -144,7 +144,8 @@ export default Vue.extend({
         sensitivity: 'base'
       })
       this.dialog.length = 1
-      this.dialog.file = nextFileResult.file.sort(collator.compare, null, 2).map(item => item.fileName)
+      this.dialog.file = nextFileResult.file.map(item => item.fileName).sort(collator.compare, null, 2)
+
       this.dialog._id = nextFileResult._id
       this.dialog.nowPath = nextFileResult.nowPath
     },
