@@ -282,6 +282,7 @@ ipcMain.on('docDelete', async (ev, { tableId, nowPath, isRoot, rootPath }) => {
 ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
   // userDataTable warm
   try {
+    let sendData: false | overall[] = false
     const nowPathRead = new GetDirStructure(nowPath)
     const readResult = await nowPathRead.promise_readDirStructure(true)
 
@@ -302,6 +303,7 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
           isRootUpdate = true
           overlapKey.isRoot = true
           overlapKey.name = existDoc.name
+          sendData = oneDir.overall
         }
 
         // recording overall change
@@ -380,13 +382,14 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
           await dbTask.childTable.update(tableId, { _id: doc._id }, { $set: { overall: newOverall } })
           parentDir = await dbTask.childTable.find(tableId, { dir: { $elemMatch: _nowPath } })
           if (!parentDir[0].isRoot) await findParentDirAndDoTask(parentDir[0].nowPath)
+          else sendData = newOverall
         }
       }
       const changeTypeMapping = overallChange.map(item => item.type)
       await findParentDirAndDoTask(nowPath)
     }
 
-    ev.reply('docSync', true)
+    ev.reply('docSync', sendData)
   } catch (er) {
     console.log(`ipc : docSync ERROR _id ${tableId} nowPath : ${nowPath}\n${er}`)
     ev.reply('docSync', false)

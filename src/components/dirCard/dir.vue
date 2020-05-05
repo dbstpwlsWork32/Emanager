@@ -201,10 +201,19 @@ export default Vue.extend({
     docUpdate () {
       this.syncDialog = true
       ipcRenderer.send('docSync', { tableId: this.dir.tableId, nowPath: this.dir.nowPath })
-      ipcRenderer.once('docSync', () => {
+      ipcRenderer.once('docSync', (e, sendData) => {
         this.$nextTick(() => {
           this.syncDialog = false
         })
+
+        if (sendData !== false) {
+          this.$store.commit('modifyByPath', {
+            nowPath: this.$store.getters.rootTableName(this.dir.tableId).nowPath,
+            replace: {
+              overall: sendData
+            }
+          })
+        }
       })
     }
   },
