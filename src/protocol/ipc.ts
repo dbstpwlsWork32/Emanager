@@ -285,9 +285,11 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
     const nowPathRead = new GetDirStructure(nowPath)
     const readResult = await nowPathRead.promise_readDirStructure(true)
 
-    // sub dir sync
+    // all sync
     const subAndNowDoc = await dbTask.childTable.find(tableId, { nowPath: { $regex: new RegExp('^' + nowPath.replace(/\\/g, '\\\\').replace(/([^ㄱ-ㅎㅏ-ㅣ가-힣\w\s\\])/g, '\\$1')) } })
     const subAndNowDocMapNowPath = subAndNowDoc.map(item => item.nowPath)
+    let isRootUpdate = false
+    let overallChange: overall[] = []
 
     for (const oneDir of readResult) {
       const indexOf = subAndNowDocMapNowPath.indexOf(oneDir.nowPath)
@@ -297,8 +299,42 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
 
         let overlapKey: any = { user: existDoc.user }
         if (existDoc.isRoot) {
+          isRootUpdate = true
           overlapKey.isRoot = true
           overlapKey.name = existDoc.name
+        }
+
+        // recording overall change
+        if (oneDir.nowPath === nowPath) {
+          const typeMapping = existDoc.overall.map(item => item.type)
+          const allReadyConvertType: number[] = []
+
+          oneDir.overall.map(item => {
+            const index = typeMapping.indexOf(item.type)
+            if (index !== -1) {
+              const newCount = item.count - existDoc.overall[index].count
+              if (newCount !== 0) {
+                overallChange.push({
+                  type: item.type,
+                  count: newCount
+                })
+              }
+              allReadyConvertType.push(index)
+            } else {
+              overallChange.push(item)
+            }
+          })
+
+          // if it do not same length, overall someone is delete
+          if (allReadyConvertType.length !== typeMapping.length) {
+            // PASSING OBJECT MEMORY POINTER
+            const beDeleteOverall = existDoc.overall.map(item => item)
+            allReadyConvertType.forEach(index => {
+              beDeleteOverall.splice(index, 1)
+            })
+
+            overallChange = overallChange.concat(beDeleteOverall.map(item => {  return { type: item.type, count: -1 * item.count } }))
+          }
         }
 
         await dbTask.childTable.update(tableId, { nowPath: oneDir.nowPath }, Object.assign(oneDir, overlapKey))
@@ -309,6 +345,45 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
 
     for (const removeDoc of subAndNowDoc) {
       await dbTask.childTable.remove(tableId, { _id: removeDoc._id })
+    }
+
+    // if do not update root document and nowDoc overall change, overall concat
+    if (!isRootUpdate && overallChange.length) {
+      const overallConcatTask = (parentOverall: overall[]): overall[] => {
+        const countZeroIndex: number[] = []
+        const newOverall = parentOverall.map((item, itemIndex) => {
+          const index = changeTypeMapping.indexOf(item.type)
+          if (index !== -1) {
+            const newCount = item.count + overallChange[index].count
+            if (newCount <= 0) countZeroIndex.push(itemIndex)
+            return {
+              type: item.type,
+              count: newCount
+            }
+          } else {
+            return item
+          }
+        })
+
+        countZeroIndex.forEach(index => {
+          newOverall.splice(index, 1)
+        })
+
+        return newOverall
+      }
+      const findParentDirAndDoTask = async (_nowPath: string) => {
+        const beUpdateDoc = await dbTask.childTable.find(tableId, { dir: { $elemMatch: _nowPath } })
+        let parentDir: NEDBDirDocument[] = []
+
+        for (const doc of beUpdateDoc) {
+          const newOverall = overallConcatTask(doc.overall)
+          await dbTask.childTable.update(tableId, { _id: doc._id }, { $set: { overall: newOverall } })
+          parentDir = await dbTask.childTable.find(tableId, { dir: { $elemMatch: _nowPath } })
+          if (!parentDir[0].isRoot) await findParentDirAndDoTask(parentDir[0].nowPath)
+        }
+      }
+      const changeTypeMapping = overallChange.map(item => item.type)
+      await findParentDirAndDoTask(nowPath)
     }
 
     ev.reply('docSync', true)
