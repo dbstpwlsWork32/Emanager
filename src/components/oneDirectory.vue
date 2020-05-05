@@ -1,9 +1,10 @@
 <template>
-  <v-row id="oneDirectiory">
+  <v-row id="one-directiory">
     <v-banner
       single-line
       width="100%"
       sticky
+      class="one-directory__banner"
     >
       {{folderName}}
     </v-banner>
@@ -41,16 +42,16 @@
       </v-tab-item>
 
       <v-tab-item v-if="fileStat.video.length">
-        <template v-for="(fObj, index) in fileStat.video">
-          <videoCard :src="getFilePath(fObj.fileName)" :key="index" />
+        <template v-for="fObj in fileStat.video">
+          <videoCard :src="getFilePath(fObj.fileName)" :key="fObj.fileName" />
         </template>
       </v-tab-item>
 
       <v-tab-item v-if="fileStat.game.length">
-        <template v-for="(fObj, index) in fileStat.game">
+        <template v-for="fObj in fileStat.game">
           <v-btn
-            class="oneDirectory__button"
-            :key="index"
+            class="one-directory__button"
+            :key="fObj.fileName"
             @click="externalProcessDoit(fObj.fileName)"
           >
             {{fObj.fileName}}
@@ -62,10 +63,10 @@
         v-if="fileStat.audio.length"
       >
         <audio
-          v-for="(fObj, index) in fileStat.audio"
+          v-for="fObj in fileStat.audio"
           controls
           :src="getFilePath(fObj.fileName)"
-          :key="index"
+          :key="fObj.fileName"
         ></audio>
       </v-tab-item>
 
@@ -234,10 +235,13 @@ export default Vue.extend({
 </script>
 
 <style lang="sass">
-  #oneDirectiory
+  #one-directiory
     .v-tabs-items
       background: none !important
       width: 100%
-  .oneDirectory__button
-    margin-top: 10px
+  .one-directory
+    &__button
+      margin-top: 10px
+    &__banner
+      z-index: 2 !important
 </style>

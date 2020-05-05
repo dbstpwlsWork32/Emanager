@@ -5,6 +5,7 @@
     elevation="20"
     :img='nowThumbnail'
     class="b__dir-card"
+    :class="{ 'exist-thumbnail': nowThumbnail }"
     @click.right="menuTask"
   >
     <v-menu
@@ -98,7 +99,7 @@
 
 <script>
 import Vue from 'vue'
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, shell } from 'electron'
 import { ThmbnailDir } from './thumbnail'
 
 export default Vue.extend({
@@ -120,6 +121,12 @@ export default Vue.extend({
         {
           title: 'Delete',
           callback: this.docDelete
+        },
+        {
+          title: 'Reveal File Explore',
+          callback: () => {
+            shell.showItemInFolder(this.dir.nowPath)
+          }
         }
       ],
       showMenu: false,
@@ -253,6 +260,25 @@ export default Vue.extend({
     position: relative
     width: 200px
     margin: 10px
+    &.exist-thumbnail
+      .v-list-item
+        position: relative
+        z-index: 1
+        &:after
+          content: ''
+          display: block
+          position: absolute
+          top: 0
+          left: 0
+          right: 0
+          bottom: 0
+          background-color: #000
+          opacity: .3
+          z-index: -1
+        &__content
+          color: #e6e6e6 !important
+        &__subtitle, .v-icon
+          color: #c7c7c7 !important
   .b__dir-card
     &_addDir-open
       width: 100%

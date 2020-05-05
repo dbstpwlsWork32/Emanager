@@ -72,7 +72,7 @@ export default new Vuex.Store({
     },
     async add ({ commit }, { name, nowPath, isLoading }) {
       commit('changeIsAllLoad', false)
-      commit('add', { name, nowPath, isLoading, process: 'start', overall: [], _id: '', user: {} })
+      commit('add', { name, nowPath, isLoading, process: 'start', overall: [], _id: '', user: {}, file: [] })
 
       /* eslint-disable */
       ipcRenderer.send('db_firstInsert-dir', { nowPath, name })

@@ -284,14 +284,16 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
   try {
     const nowPathRead = new GetDirStructure(nowPath)
     const readResult = await nowPathRead.promise_readDirStructure(true)
-    const allDoc = await dbTask.childTable.find(tableId, { nowPath: { $regex: new RegExp('^'+nowPath.replace(/\\/g, '\\\\')) } })
-    const allDocMapNowPath = allDoc.map(item => item.nowPath)
+
+    // sub dir sync
+    const subAndNowDoc = await dbTask.childTable.find(tableId, { nowPath: { $regex: new RegExp('^' + nowPath.replace(/\\/g, '\\\\').replace(/([^ㄱ-ㅎㅏ-ㅣ가-힣\w\s\\])/g, '\\$1')) } })
+    const subAndNowDocMapNowPath = subAndNowDoc.map(item => item.nowPath)
 
     for (const oneDir of readResult) {
-      const indexOf = allDocMapNowPath.indexOf(oneDir.nowPath)
+      const indexOf = subAndNowDocMapNowPath.indexOf(oneDir.nowPath)
       if (indexOf !== -1) {
-        const [existDoc] = allDoc.splice(indexOf, 1)
-        allDocMapNowPath.splice(indexOf, 1)
+        const [existDoc] = subAndNowDoc.splice(indexOf, 1)
+        subAndNowDocMapNowPath.splice(indexOf, 1)
 
         let overlapKey: any = { user: existDoc.user }
         if (existDoc.isRoot) {
@@ -305,10 +307,10 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
       }
     }
 
-    for (const removeDoc of allDoc) {
+    for (const removeDoc of subAndNowDoc) {
       await dbTask.childTable.remove(tableId, { _id: removeDoc._id })
     }
-  
+
     ev.reply('docSync', true)
   } catch (er) {
     console.log(`ipc : docSync ERROR _id ${tableId} nowPath : ${nowPath}\n${er}`)
