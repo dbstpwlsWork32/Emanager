@@ -26,7 +26,7 @@
         <v-row no-gutters>
           <dirCard
             v-for="dir in dir"
-            :dir="dir"
+            :dir.sync="dir"
             :key="dir._id"
             v-on:dirDelete="deleteDir"
           />
