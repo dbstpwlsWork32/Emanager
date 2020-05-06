@@ -11,8 +11,7 @@ interface NowDirList {
   tableId: string;
   file: any[];
   _id: string;
-  user: any;
-  existSubDir: boolean
+  user: any
 }
 const getChildDirDocs = async (tableId: string, childList: string[]): Promise<NowDirList[]> => {
   let nowDirList: NowDirList[] = []
@@ -33,8 +32,7 @@ const getChildDirDocs = async (tableId: string, childList: string[]): Promise<No
       tableId: tableId,
       _id: childResult._id,
       user: childResult.user,
-      file: thumbnailFile,
-      existSubDir: !childResult.dir.length? false : true
+      file: thumbnailFile
     })
   }
 
@@ -398,9 +396,4 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
     console.log(`ipc : docSync ERROR _id ${tableId} nowPath : ${nowPath}\n${er}`)
     ev.reply('docSync', false)
   }
-})
-
-ipcMain.on('db_find_child', async (ev, { tableId, query }) => {
-  const send = await dbTask.childTable.find(tableId, query)
-  ev.reply('db_find_child', send)
 })
