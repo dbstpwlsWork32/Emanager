@@ -3,6 +3,7 @@ import mkdirp from 'mkdirp'
 import path from 'path'
 import { spawn } from 'child_process'
 import { remote } from 'electron'
+import { ffmpegBin } from '@/binaries'
 
 interface File {
   fileName: string;
@@ -97,7 +98,7 @@ class ThmbnailDir extends DocDataManger {
     }
 
     await new Promise(resolve => {
-      const ffmpeg = spawn('ffmpeg', ffmpegArgs)
+      const ffmpeg = spawn(ffmpegBin, ffmpegArgs)
 
       ffmpeg.on('error', () => {
         throw new Error(`make thmbnail error\n ${ffmpegArgs}\n${representFile}\n${this.fromPath}`)
