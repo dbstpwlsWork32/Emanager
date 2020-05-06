@@ -1,8 +1,9 @@
 import { ipcMain } from 'electron'
 import dbTask from '../database/db'
 import GetDirStructure from '../database/modules/dirStructure'
-import { NEDBRootTable, NEDBDirDocument, DirDocumentModel } from '../database/models/directory'
+import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'
 import path from 'path'
+import { filePathRegExpString } from '@/defaultModule'
 
 interface NowDirList {
   nowPath: string;
@@ -11,6 +12,7 @@ interface NowDirList {
   file: any[];
   _id: string;
   user: any;
+  existSubDir: boolean
 }
 const getChildDirDocs = async (tableId: string, childList: string[]): Promise<NowDirList[]> => {
   let nowDirList: NowDirList[] = []
@@ -31,7 +33,8 @@ const getChildDirDocs = async (tableId: string, childList: string[]): Promise<No
       tableId: tableId,
       _id: childResult._id,
       user: childResult.user,
-      file: thumbnailFile
+      file: thumbnailFile,
+      existSubDir: !childResult.dir.length? false : true
     })
   }
 
@@ -287,7 +290,7 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
     const readResult = await nowPathRead.promise_readDirStructure(true)
 
     // all sync
-    const subAndNowDoc = await dbTask.childTable.find(tableId, { nowPath: { $regex: new RegExp('^' + nowPath.replace(/\\/g, '\\\\').replace(/([^ㄱ-ㅎㅏ-ㅣ가-힣\w\s\\])/g, '\\$1')) } })
+    const subAndNowDoc = await dbTask.childTable.find(tableId, { nowPath: { $regex: new RegExp('^' + filePathRegExpString(nowPath)) } })
     const subAndNowDocMapNowPath = subAndNowDoc.map(item => item.nowPath)
     let isRootUpdate = false
     let overallChange: overall[] = []
@@ -395,4 +398,9 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
     console.log(`ipc : docSync ERROR _id ${tableId} nowPath : ${nowPath}\n${er}`)
     ev.reply('docSync', false)
   }
+})
+
+ipcMain.on('db_find_child', async (ev, { tableId, query }) => {
+  const send = await dbTask.childTable.find(tableId, query)
+  ev.reply('db_find_child', send)
 })

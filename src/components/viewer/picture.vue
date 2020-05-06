@@ -68,6 +68,7 @@
 import Vue from 'vue'
 import path from 'path'
 import { ipcRenderer } from 'electron'
+import { filePathUrl } from '@/defaultModule'
 
 export default Vue.extend({
   name: 'come__picture',
@@ -124,7 +125,7 @@ export default Vue.extend({
     },
     // 2. update folder
     getFilePath (fileName, nowPath = this.nowPath) {
-      return `file:///${path.join(nowPath, fileName).replace(/\\/g, '/').replace('#', '%23').replace(/\s/g, '%20')}`
+      return `file:///${filePathUrl(path.join(nowPath, fileName))}`
     },
     async changeDialogFile (goPrev = false) {
       const splitPath = this.nowPath.split(path.sep)

@@ -12,22 +12,37 @@ interface File {
   mtime: Date;
 }
 
-class DocDataManger {
-  readonly baseDir: string = ''
+class ThumbnailManager {
+  readonly tableId: string;
+  readonly baseDir: string;
   readonly fromPath: string;
   readonly prefix: {
-    thumbnail: string;
+    dirThumbnail: string;
   }
 
   constructor ({ tableId, docId, nowPath }: { tableId: string; docId: string; nowPath: string }) {
-    this.baseDir = path.join(remote.app.getPath('appData'), 'emanager_doc', tableId, docId)
+    this.tableId = tableId
+    this.baseDir = ThumbnailManager.getBasePath(tableId, docId)
     this.fromPath = nowPath
     this.prefix = {
-      thumbnail: '__thumbnail__'
+      dirThumbnail: '__dirthumbnail__'
     }
   }
 
-  async getThumbnail (): Promise<string | boolean> {
+  static getBasePath (tableId: string, docId: string): string {
+    return path.join(remote.app.getPath('appData'), 'emanager_doc', tableId, docId)
+  }
+}
+
+class ThumbnailDir extends ThumbnailManager {
+  readonly file: File[]
+
+  constructor ({ tableId, docId, nowPath, file }: { tableId: string; docId: string; nowPath: string; file: File[] }) {
+    super({ tableId, docId, nowPath })
+    this.file = file
+  }
+
+  async getDirThumbnail (): Promise<string | boolean> {
     let readResult = []
     try {
       readResult = await fs.promises.readdir(this.baseDir)
@@ -37,27 +52,18 @@ class DocDataManger {
     }
 
     for (const file of readResult) {
-      if (file.match(this.prefix.thumbnail)) return path.join(this.baseDir, file)
+      if (file.match(this.prefix.dirThumbnail)) return path.join(this.baseDir, file)
     }
 
     return false
   }
-}
-
-class ThmbnailDir extends DocDataManger {
-  readonly file: File[]
-
-  constructor ({ tableId, docId, nowPath, file }: { tableId: string; docId: string; nowPath: string; file: File[] }) {
-    super({ tableId, docId, nowPath })
-    this.file = file
-  }
 
   // it will return thumbnail file path
-  async make (): Promise<string | boolean> {
-    const isExistThumbnail = await this.getThumbnail()
+  async makeDirThumbnail (): Promise<string | boolean> {
+    const isExistThumbnail = await this.getDirThumbnail()
 
     if (typeof isExistThumbnail === 'string') {
-      const thumbnailRealName = path.parse(isExistThumbnail).name.replace(this.prefix.thumbnail, '')
+      const thumbnailRealName = path.parse(isExistThumbnail).name.replace(this.prefix.dirThumbnail, '')
       for (const file of this.file) {
         if (path.parse(file.fileName).name === thumbnailRealName) return isExistThumbnail
       }
@@ -85,7 +91,7 @@ class ThmbnailDir extends DocDataManger {
         '-frames:v',
         '1',
         '-y',
-        path.join(this.baseDir, `${this.prefix.thumbnail}${path.parse(representFile.fileName).name}.jpg`)
+        path.join(this.baseDir, `${this.prefix.dirThumbnail}${path.parse(representFile.fileName).name}.jpg`)
       ]
     } else {
       ffmpegArgs = [
@@ -93,7 +99,7 @@ class ThmbnailDir extends DocDataManger {
         path.join(this.fromPath, representFile.fileName),
         '-vf',
         'scale=100:-1',
-        path.join(this.baseDir, `${this.prefix.thumbnail}${path.parse(representFile.fileName).name}.jpg`)
+        path.join(this.baseDir, `${this.prefix.dirThumbnail}${path.parse(representFile.fileName).name}.jpg`)
       ]
     }
 
@@ -108,11 +114,11 @@ class ThmbnailDir extends DocDataManger {
       })
     })
 
-    return path.join(this.baseDir, `${this.prefix.thumbnail}${path.parse(representFile.fileName).name}.jpg`)
+    return path.join(this.baseDir, `${this.prefix.dirThumbnail}${path.parse(representFile.fileName).name}.jpg`)
   }
 }
 
 export {
-  ThmbnailDir,
-  DocDataManger
+  ThumbnailDir,
+  ThumbnailManager
 }

@@ -100,7 +100,8 @@
 <script>
 import Vue from 'vue'
 import { ipcRenderer, shell } from 'electron'
-import { ThmbnailDir } from './thumbnail'
+import { ThumbnailDir, ThumbnailManager } from './thumbnail'
+import { filePathRegExpString } from '@/defaultModule'
 
 export default Vue.extend({
   name: 'come__oneDirectory-simple',
@@ -250,13 +251,13 @@ export default Vue.extend({
   async created () {
     const overallType = this.dir.overall.map(item => item.type)
     if (this.dir.file.length && (overallType.indexOf('picture') !== -1 || overallType.indexOf('video') !== -1)) {
-      const thumbnail = new ThmbnailDir({
+      const thumbnail = new ThumbnailDir({
         tableId: this.dir.tableId,
         docId: this.dir._id,
         nowPath: this.dir.nowPath,
         file: this.dir.file
       })
-      const thumbnailPath = await thumbnail.make()
+      const thumbnailPath = await thumbnail.makeDirThumbnail()
       if (thumbnailPath) this.nowThumbnail = thumbnailPath.replace(/\\/g, '/')
       else this.nowThumbnail = null
     }

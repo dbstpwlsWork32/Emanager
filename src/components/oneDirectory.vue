@@ -81,6 +81,7 @@ import dirCard from '@/components/dirCard/dir'
 import videoCard from '@/components/dirCard/video'
 import pictureViewer from '@/components/viewer/picture'
 import path from 'path'
+import { filePathUrl } from '@/defaultModule'
 
 export default Vue.extend({
   name: 'come__oneDirectory',
@@ -144,7 +145,7 @@ export default Vue.extend({
       if (this.dirPath.length) this.scrollEvent(true)
     },
     getFilePath (fileName) {
-      return `file:///${path.join(this.nowPath, fileName).replace(/\\/g, '/').replace('#', '%23').replace(/\s/g, '%20')}`
+      return `file:///${filePathUrl(path.join(this.nowPath, fileName))}`
     },
     externalProcessDoit (fileName) {
       shell.openItem(path.join(this.nowPath, fileName))
