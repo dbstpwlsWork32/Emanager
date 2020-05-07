@@ -68,7 +68,7 @@
 import Vue from 'vue'
 import path from 'path'
 import { ipcRenderer } from 'electron'
-import { filePathUrl } from '@/defaultModule'
+import { filePathUrl, numbericSortArray } from '@/defaultModule'
 
 export default Vue.extend({
   name: 'come__picture',
@@ -140,12 +140,8 @@ export default Vue.extend({
         })
       })
 
-      const collator = new Intl.Collator(undefined, {
-        numeric: true,
-        sensitivity: 'base'
-      })
       this.dialog.length = 1
-      this.dialog.file = nextFileResult.file.map(item => item.fileName).sort(collator.compare, null, 2)
+      this.dialog.file = numbericSortArray(nextFileResult.file.map(item => item.fileName))
 
       this.dialog._id = nextFileResult._id
       this.dialog.nowPath = nextFileResult.nowPath
@@ -161,13 +157,8 @@ export default Vue.extend({
       this.locationField.value = 1
 
       // picture numerically sort
-      const collator = new Intl.Collator(undefined, {
-        numeric: true,
-        sensitivity: 'base'
-      })
-
       this.dialog.file.splice(0, this.dialog.file.length)
-      this.fileToSee.sort(collator.compare, null, 2).map(item => {
+      this.fileToSee.forEach(item => {
         this.dialog.file.push(item)
       })
 
@@ -191,7 +182,7 @@ export default Vue.extend({
   },
   computed: {
     fileToSee () {
-      return this.fileObjs.map(item => item.fileName)
+      return numbericSortArray(this.fileObjs.map(item => item.fileName))
     },
     nowPicturePath () {
       return this.getFilePath(this.dialog.file[this.dialog.length - 1], this.dialog.nowPath)

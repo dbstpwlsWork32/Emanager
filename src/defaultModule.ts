@@ -12,7 +12,16 @@ const filePathUrl = (filePath: string): string => {
   return filePath.replace(/\\/g, '/').replace('#', '%23').replace(/\s/g, '%20')
 }
 
+const numbericSortArray = (fileNameList: string[]): string[] => {
+  const collator = new Intl.Collator(undefined, {
+    numeric: true,
+    sensitivity: 'base'
+  })
+  return fileNameList.sort(collator.compare)
+}
+
 export {
   filePathRegExpString,
-  filePathUrl
+  filePathUrl,
+  numbericSortArray
 }
