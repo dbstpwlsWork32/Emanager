@@ -10,11 +10,11 @@
     </v-banner>
 
     <v-tabs v-model="currentItem">
-      <v-tab v-if="dir.length">Folder : {{dir.length}}</v-tab>
-      <v-tab v-if="fileStat.picture.length">Picture</v-tab>
-      <v-tab v-if="fileStat.video.length">Video</v-tab>
-      <v-tab v-if="fileStat.game.length">Game</v-tab>
-      <v-tab v-if="fileStat.audio.length">audio</v-tab>
+      <v-tab v-if="dir.length">Folder: {{dir.length}}</v-tab>
+      <v-tab v-if="fileStat.picture.length">Picture: {{fileStat.picture.length}}</v-tab>
+      <v-tab v-if="fileStat.video.length">Video: {{fileStat.video.length}}</v-tab>
+      <v-tab v-if="fileStat.game.length">Game: {{fileStat.game.length}}</v-tab>
+      <v-tab v-if="fileStat.audio.length">audio: {{fileStat.audio.length}}</v-tab>
     </v-tabs>
 
     <v-tabs-items v-model="currentItem">
@@ -42,9 +42,16 @@
       </v-tab-item>
 
       <v-tab-item v-if="fileStat.video.length">
-        <template v-for="fObj in fileStat.video">
-          <videoCard :src="getFilePath(fObj.fileName)" :key="fObj.fileName" />
-        </template>
+        <v-row no-gutters>
+          <videoCard
+            v-for="file in fileStat.video"
+            :key="file.fileName"
+            :tableId="tableId"
+            :docId="docId"
+            :nowPath="nowPath"
+            :fileName="file.fileName"
+          />
+        </v-row>
       </v-tab-item>
 
       <v-tab-item v-if="fileStat.game.length">
@@ -78,7 +85,7 @@
 import Vue from 'vue'
 import { ipcRenderer, shell } from 'electron'
 import dirCard from '@/components/dirCard/dir'
-import videoCard from '@/components/dirCard/video'
+import videoCard from './dirCard/video'
 import pictureViewer from '@/components/viewer/picture'
 import path from 'path'
 import { filePathUrl } from '@/defaultModule'
@@ -151,7 +158,7 @@ export default Vue.extend({
       shell.openItem(path.join(this.nowPath, fileName))
     },
     scrollEvent (repeat) {
-      if (window.scrollY + window.innerHeight <= document.documentElement.scrollHeight - 400) {
+      if (window.scrollY + window.innerHeight <= document.documentElement.scrollHeight - 300) {
         return false
       }
 

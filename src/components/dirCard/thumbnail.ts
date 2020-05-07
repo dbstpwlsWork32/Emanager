@@ -11,6 +11,9 @@ interface File {
   ctime: Date;
   mtime: Date;
 }
+interface VideoPrefix {
+  thumbnail: string;
+}
 
 class ThumbnailManager {
   readonly tableId: string;
@@ -18,6 +21,7 @@ class ThumbnailManager {
   readonly fromPath: string;
   readonly prefix: {
     dirThumbnail: string;
+    video: VideoPrefix;
   }
 
   constructor ({ tableId, docId, nowPath }: { tableId: string; docId: string; nowPath: string }) {
@@ -25,7 +29,10 @@ class ThumbnailManager {
     this.baseDir = ThumbnailManager.getBasePath(tableId, docId)
     this.fromPath = nowPath
     this.prefix = {
-      dirThumbnail: '__dirthumbnail__'
+      dirThumbnail: '__dirthumbnail__',
+      video: {
+        thumbnail: '__vthumbnail__'
+      }
     }
   }
 
@@ -83,12 +90,12 @@ class ThumbnailDir extends ThumbnailManager {
     if (representFile.fileType === 'video') {
       ffmpegArgs = [
         '-ss',
-        '3',
+        '7',
         '-i',
         path.join(this.fromPath, representFile.fileName),
         '-vf',
-        'select=gt(scene\\,0.5),scale=320:-1',
-        '-frames:v',
+        'scale=220:-1',
+        '-vframes',
         '1',
         '-y',
         path.join(this.baseDir, `${this.prefix.dirThumbnail}${path.parse(representFile.fileName).name}.jpg`)
@@ -118,7 +125,63 @@ class ThumbnailDir extends ThumbnailManager {
   }
 }
 
+class VideoThumnail extends ThumbnailManager {
+  fileBase: string;
+
+  constructor ({ nowPath, docId, tableId, fileBase }: { nowPath: string; docId: string; tableId: string; fileBase: string }) {
+    super({ tableId, docId, nowPath })
+    this.fileBase = fileBase
+  }
+
+  async getThumbnail (): Promise<string> {
+    const inputFileName = path.parse(this.fileBase).name
+    const outputFolder = path.join(this.baseDir, inputFileName)
+    // check exist folder
+    try {
+      await fs.promises.stat(outputFolder)
+    } catch {
+      await mkdirp(outputFolder)
+    }
+
+    const outputFile = path.join(outputFolder, `${this.prefix.video.thumbnail}.jpg`)
+    // check exist file
+    try {
+      await fs.promises.stat(outputFile)
+    } catch {
+      // if not exist, make thumbnail
+      const ffmpegArgs = [
+        '-ss',
+        '7',
+        '-i',
+        path.join(this.fromPath, this.fileBase),
+        '-vf',
+        'scale=320:-1',
+        '-vframes',
+        '1',
+        '-y',
+        outputFile
+      ]
+
+      await new Promise(resolve => {
+        const ffmpeg = spawn(ffmpegBin, ffmpegArgs)
+
+        ffmpeg.on('error', () => {
+          throw new Error(`make thmbnail error\n ${ffmpegArgs}\n${outputFile}\n${this.fromPath}`)
+        })
+        ffmpeg.on('exit', () => {
+          setTimeout(() => {
+            resolve()
+          }, 320)
+        })
+      })
+    }
+
+    return outputFile
+  }
+}
+
 export {
   ThumbnailDir,
-  ThumbnailManager
+  ThumbnailManager,
+  VideoThumnail
 }

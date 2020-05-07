@@ -100,8 +100,7 @@
 <script>
 import Vue from 'vue'
 import { ipcRenderer, shell } from 'electron'
-import { ThumbnailDir, ThumbnailManager } from './thumbnail'
-import { filePathRegExpString } from '@/defaultModule'
+import { ThumbnailDir } from './thumbnail'
 
 export default Vue.extend({
   name: 'come__oneDirectory-simple',
@@ -135,7 +134,8 @@ export default Vue.extend({
         x: 0,
         y: 0
       },
-      syncDialog: false
+      syncDialog: false,
+      shouldThumbnail: false
     }
   },
   methods: {
@@ -220,6 +220,29 @@ export default Vue.extend({
           this.$emit('update:dir', Object.assign(this.dir, { overall: dirOverall }))
         }
       })
+    },
+    async getThumbnail () {
+      const thumbnail = new ThumbnailDir({
+        tableId: this.dir.tableId,
+        docId: this.dir._id,
+        nowPath: this.dir.nowPath,
+        file: this.dir.file
+      })
+
+      let thumbnailPath = await thumbnail.getDirThumbnail()
+      if (thumbnailPath === false) {
+        thumbnailPath = await thumbnail.makeDirThumbnail()
+
+        this.nowThumbnail = thumbnailPath.replace(/\\/g, '/')
+      } else if (thumbnailPath !== false) {
+        this.nowThumbnail = thumbnailPath.replace(/\\/g, '/')
+      }
+
+      this.$nextTick(() => {
+        this.$store.commit('backgroundProceed', -1)
+      })
+
+      return false
     }
   },
   computed: {
@@ -246,20 +269,26 @@ export default Vue.extend({
     },
     folderName () {
       return this.dir.name || this.dir.nowPath
+    },
+    canProceed () {
+      return this.$store.state.proceedBackground <= 2
     }
   },
-  async created () {
+  watch: {
+    'canProceed' () {
+      if (this.canProceed && this.shouldThumbnail && !this.nowThumbnail) {
+        this.$store.commit('backgroundProceed', 1)
+        this.getThumbnail()
+      }
+    }
+  },
+  created () {
     const overallType = this.dir.overall.map(item => item.type)
-    if (this.dir.file.length && (overallType.indexOf('picture') !== -1 || overallType.indexOf('video') !== -1)) {
-      const thumbnail = new ThumbnailDir({
-        tableId: this.dir.tableId,
-        docId: this.dir._id,
-        nowPath: this.dir.nowPath,
-        file: this.dir.file
-      })
-      const thumbnailPath = await thumbnail.makeDirThumbnail()
-      if (thumbnailPath) this.nowThumbnail = thumbnailPath.replace(/\\/g, '/')
-      else this.nowThumbnail = null
+    this.shouldThumbnail = this.dir.file.length && (overallType.indexOf('picture') !== -1 || overallType.indexOf('video') !== -1)
+
+    if (this.shouldThumbnail && this.canProceed) {
+      this.$store.commit('backgroundProceed', 1)
+      this.getThumbnail()
     }
   },
   beforeDestroy () {
