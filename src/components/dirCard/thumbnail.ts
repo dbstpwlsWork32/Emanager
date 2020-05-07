@@ -86,15 +86,17 @@ class ThumbnailDir extends ThumbnailManager {
 
     if (!representFile) return false
 
+    let videoConvert = false
     let ffmpegArgs: string[]
     if (representFile.fileType === 'video') {
+      videoConvert = true
       ffmpegArgs = [
         '-ss',
         '7',
         '-i',
         path.join(this.fromPath, representFile.fileName),
         '-vf',
-        'scale=220:-1',
+        'scale=200:-1',
         '-vframes',
         '1',
         '-y',
@@ -117,7 +119,13 @@ class ThumbnailDir extends ThumbnailManager {
         throw new Error(`make thmbnail error\n ${ffmpegArgs}\n${representFile}\n${this.fromPath}`)
       })
       ffmpeg.on('exit', () => {
-        resolve()
+        if (videoConvert) {
+          setTimeout(() => {
+            resolve()
+          }, 320)
+        } else {
+          resolve()
+        }
       })
     })
 
