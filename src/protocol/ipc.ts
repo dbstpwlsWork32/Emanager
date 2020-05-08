@@ -4,6 +4,7 @@ import GetDirStructure from '../database/modules/dirStructure'
 import { NEDBRootTable, NEDBDirDocument } from '../database/models/directory'
 import path from 'path'
 import { filePathRegExpString } from '@/defaultModule'
+import db from '../database/db'
 
 interface NowDirList {
   nowPath: string;
@@ -396,4 +397,10 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
     console.log(`ipc : docSync ERROR _id ${tableId} nowPath : ${nowPath}\n${er}`)
     ev.reply('docSync', false)
   }
+})
+
+ipcMain.on('find_child', async (ev, { tableId, query }) => {
+  const childResults = await db.childTable.find(tableId, query)
+
+  ev.reply('find_child', childResults)
 })

@@ -43,14 +43,15 @@
 
       <v-tab-item v-if="fileStat.video.length">
         <v-row no-gutters>
-          <videoCard
-            v-for="file in fileStat.video"
-            :key="file.fileName"
-            :tableId="tableId"
-            :docId="docId"
-            :nowPath="nowPath"
-            :fileName="file.fileName"
-          />
+          <v-col md="4" lg="3" v-for="file in fileStat.video" :key="file.fileName">
+            <videoCard
+              :tableId="tableId"
+              :docId="docId"
+              :nowPath="nowPath"
+              :fileObj="file"
+              style="margin: 10px"
+            />
+          </v-col>
         </v-row>
       </v-tab-item>
 

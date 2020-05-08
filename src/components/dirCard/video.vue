@@ -1,12 +1,23 @@
 <template>
-  <v-col cols="4">
-    <v-card class="b__videoCard" elevation="0">
-      <v-img
-        :src="thumbnailPath"
-      />
-      {{fileName}}
-    </v-card>
-  </v-col>
+  <v-card
+    class="b__video-card"
+    elevation="0"
+    link
+    :disabled="disabled"
+    :to="`/video/${tableId}/${docId}/${fileObj.fileName}`"
+  >
+    <div
+      v-if="thumbnailPath === ''"
+      style="width:100%;padding-bottom:55%;background:#000;"
+    ></div>
+    <v-img
+      :src="thumbnailPath"
+      aspect-ratio="1.8"
+    />
+
+    <h3 class="subtitle-1" style="padding: 5px 5px 0 5px">{{fileObj.fileName}}</h3>
+    <span class="caption" style="padding: 0 0 0 5px">{{cTime}}</span>
+  </v-card>
 </template>
 
 <script>
@@ -28,9 +39,13 @@ export default Vue.extend({
       type: String,
       required: true
     },
-    fileName: {
-      type: String,
+    fileObj: {
+      type: Object,
       required: true
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   data () {
@@ -44,7 +59,7 @@ export default Vue.extend({
         tableId: this.tableId,
         docId: this.docId,
         nowPath: this.nowPath,
-        fileBase: this.fileName
+        fileBase: this.fileObj.fileName
       })
 
       const thumbnailPath = await thumbnail.getThumbnail()
@@ -60,6 +75,10 @@ export default Vue.extend({
   computed: {
     canProceed () {
       return this.$store.state.proceedBackground <= 1
+    },
+    cTime () {
+      const time = new Date(this.fileObj.ctime)
+      return `${time.getFullYear()}.${time.getMonth()}.${time.getDate()}`
     }
   },
   watch: {
@@ -78,8 +97,3 @@ export default Vue.extend({
   }
 })
 </script>
-
-<style lang="sass">
-  .b__videoCard
-    background: none !important
-</style>
