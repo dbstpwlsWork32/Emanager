@@ -2,11 +2,10 @@
   <v-row no-gutters align="stretch" class="b__video-viewer">
     <v-col cols="9">
       <v-card class="b__video-viewer__tv">
-        <video>
+        <video controls v-if="nowPath">
           <source :src="`${nowPath}/${fileName}`" :type="`video/${fileName.split('.')[1]}`" />
-          <track v-if="subtitle.path" :src="subtitle.path" kind="subtitles" />
+          <track v-if="subtitle.path" :src="subtitle.path" kind="subtitles" default />
         </video>
-        asdadsdsa
       </v-card>
     </v-col>
     <v-col cols="3" class="b__video-viewer__collect">
@@ -44,10 +43,11 @@
 import Vue from 'vue'
 import videoCard from '../dirCard/video'
 import fs from 'fs'
-import subsrt from 'subsrt'
 import path from 'path'
 import { ipcRenderer } from 'electron'
-const decoder = new TextDecoder('shift_jis')
+import subsrt from 'subsrt'
+import iconv from 'iconv-lite'
+import jschardet from 'jschardet'
 
 export default Vue.extend({
   name: 'come__videoviewer',
@@ -80,6 +80,16 @@ export default Vue.extend({
   },
   methods: {
     async constructor () {
+      // reset data
+      this.videoFileList = []
+      this.subtitle = {
+        path: '',
+        dialog: false,
+        agreeTask: null,
+        proceed: false
+      }
+      this.nowPath = ''
+
       // BIND DB RESULT
       ipcRenderer.send('find_child', { tableId: this.tableId, query: { _id: this.docId } })
       const [result] = await new Promise(resolve => {
@@ -92,45 +102,53 @@ export default Vue.extend({
       this.videoFileList = result.file
       this.nowFileIndex = result.file.map(item => item.fileName).indexOf(this.fileName)
 
-      // FIND EXIST SUBTITLE FILE AS SAME NOW FILE NAME AND EXT IS ${subtitleExt}
-      const subtitleExt = /sub|srt|sbv|vtt|ssa|ass|smi|lrc/
-      const fileName = path.parse(this.fileName).name
-      let existSubtitle = ''
-      let fastForBreak = false
-      const nowFileName = path.parse(this.fileName).name
+      // FIND EXIST SUBTITLE FILE AS SAME NOW FILE NAME AND EXT IS ${subtitleExt}.vtt
+      try {
+        const subtitltPath = path.join(this.nowPath, path.parse(this.fileName).name + '.vtt')
+        await fs.promises.stat(subtitltPath)
 
-      for (const nowFile of (await fs.promises.readdir(this.nowPath))) {
-        if (!nowFile.match('.')) continue
-        const nowFileParse = path.parse(nowFile)
-        // if prev item is match nowVideoFile But current item is not match nowVideoFile, break for loop
-        if (fastForBreak && !(nowFileParse.name === nowFileName)) break
+        this.subtitle.path = subtitltPath
+      } catch {
+        // if not exist and now directory, exist this.fileName + .${subtitleExt}, ask for consent and convert to .vtt and apply
+        const subtitleExt = /sub|srt|sbv|vtt|ssa|ass|smi|lrc/
+        let existSubtitle = ''
+        let fastForBreak = false
+        const nowVideoName = path.parse(this.fileName).name
 
-        if (nowFileParse.name === nowFileName) {
-          fastForBreak = true
-          if (nowFileParse.ext.match(subtitleExt)) {
-            existSubtitle = nowFile
-            break
+        for (const nowFile of (await fs.promises.readdir(this.nowPath))) {
+          if (!nowFile.match('.')) continue
+          const nowFileParse = path.parse(nowFile)
+          // if prev item is match nowVideoFile But current item is not match nowVideoFile, break for loop
+          if (fastForBreak && !(nowFileParse.name === nowVideoName)) break
+
+          if (nowFileParse.name === nowVideoName) {
+            fastForBreak = true
+            if (nowFileParse.ext.match(subtitleExt)) {
+              existSubtitle = nowFile
+              break
+            }
           }
         }
-      }
 
-      if (existSubtitle) {
-        if (path.parse(existSubtitle).ext === 'vtt') {
-          this.subtitle.path = path.join(this.nowPath, existSubtitle)
-        } else {
-          // if is not .vtt file get user agree and do convert and wait....
-          this.subtitle.agreeTask = async () => {
-            this.subtitle.proceed = true
-            const fileContent = await fs.promises.readFile(path.join(this.nowPath, existSubtitle), { encoding: 'euckr' })
-            console.log(Buffer.from(fileContent).toString())
-            console.log(subsrt.detect(Buffer.from(fileContent).toString()))
-            // await fs.promises.writeFile(path.join(this.nowPath, path.parse(existSubtitle).name, '.vtt'), subsrt.convert(fileContent, { format: 'ass' }))
+        if (existSubtitle) {
+          if (path.parse(existSubtitle).ext === 'vtt') {
+            this.subtitle.path = path.join(this.nowPath, existSubtitle)
+          } else {
+            // if is not .vtt file get user agree and do convert and wait....
+            this.subtitle.agreeTask = async () => {
+              this.subtitle.proceed = true
+              const subtitleBuffer = await fs.promises.readFile(path.join(this.nowPath, existSubtitle))
+              const subtitleFormat = jschardet.detect(subtitleBuffer)
+              const subtitleUtf8 = iconv.encode(iconv.decode(subtitleBuffer, subtitleFormat.encoding), 'utf-8').toString('utf-8')
+              await fs.promises.writeFile(path.join(this.nowPath, path.parse(existSubtitle).name + '.vtt'), subsrt.convert(subtitleUtf8, { format: 'vtt' }))
 
-            existSubtitle = null
-            this.subtitle.proceed = false
-            this.subtitle.dialog = false
+              this.subtitle.path = path.join(this.nowPath, path.parse(existSubtitle).name + '.vtt')
+              this.subtitle.proceed = false
+              this.subtitle.dialog = false
+              existSubtitle = null
+            }
+            this.subtitle.dialog = true
           }
-          this.subtitle.dialog = true
         }
       }
     }
@@ -152,7 +170,7 @@ export default Vue.extend({
 <style lang="sass">
   .b__video-viewer
     &__tv, &__collect
-      height: calc(100vh - 44px)
+      max-height: calc(100vh - 44px)
     &__collect
       overflow-y: auto
       &__info
@@ -163,4 +181,7 @@ export default Vue.extend({
         margin: 0 10px 10px 10px
         &:last-child
           margin-bottom: 0
+    &__tv
+      video
+        width: 100%
 </style>

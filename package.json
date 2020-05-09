@@ -20,6 +20,8 @@
     "@types/mkdirp": "^1.0.0",
     "chai-as-promised": "^7.1.1",
     "express": "^4.17.1",
+    "iconv-lite": "^0.5.1",
+    "jschardet": "^2.1.1",
     "mkdirp": "^1.0.4",
     "nedb": "^1.8.0",
     "subsrt": "^1.1.1",
