@@ -86,7 +86,6 @@ export default Vue.extend({
   methods: {
     async constructor () {
       // reset data
-      this.videoFileList = []
       this.subtitle.path = ''
       this.nowPath = ''
       this.videoSrc = ''
@@ -105,8 +104,8 @@ export default Vue.extend({
         this.videoFileList = dbResult.file
       }
       this.nowFileIndex = dbResult.file.map(item => item.fileName).indexOf(this.fileBase)
-      this.before.tableId = dbResult.tableId
-      this.before.docId = dbResult.docId
+      this.before.tableId = this.tableId
+      this.before.docId = this.docId
 
       const nowVideoFileParse = path.parse(this.fileBase)
 
