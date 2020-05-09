@@ -2,8 +2,8 @@
   <v-row no-gutters align="stretch" class="b__video-viewer">
     <v-col cols="9">
       <v-card class="b__video-viewer__tv">
-        <video controls v-if="nowPath">
-          <source :src="`${nowPath}/${fileName}`" :type="`video/${fileName.split('.')[1]}`" />
+        <video controls v-if="videoSrc">
+          <source :src="videoSrc" :type="`video/${fileName.split('.')[1]}`" />
           <track v-if="subtitle.path" :src="subtitle.path" kind="subtitles" default />
         </video>
       </v-card>
@@ -69,6 +69,7 @@ export default Vue.extend({
     return {
       nowPath: '',
       videoFileList: [],
+      videoSrc: '',
       nowFileIndex: -1,
       subtitle: {
         path: '',
@@ -89,22 +90,27 @@ export default Vue.extend({
         proceed: false
       }
       this.nowPath = ''
+      this.videoSrc = ''
 
       // BIND DB RESULT
       ipcRenderer.send('find_child', { tableId: this.tableId, query: { _id: this.docId } })
-      const [result] = await new Promise(resolve => {
+      const [dbResult] = await new Promise(resolve => {
         ipcRenderer.once('find_child', (e, rs) => {
           resolve(rs)
         })
       })
 
-      this.nowPath = result.nowPath
-      this.videoFileList = result.file
-      this.nowFileIndex = result.file.map(item => item.fileName).indexOf(this.fileName)
+      this.nowPath = dbResult.nowPath
+      this.videoFileList = dbResult.file
+      this.nowFileIndex = dbResult.file.map(item => item.fileName).indexOf(this.fileName)
+      const nowVideoFileParse = path.parse(this.fileName)
+
+      // check video file ext for support browser video source tag
+      this.videoSrc = path.join(this.nowPath, this.fileName)
 
       // FIND EXIST SUBTITLE FILE AS SAME NOW FILE NAME AND EXT IS ${subtitleExt}.vtt
       try {
-        const subtitltPath = path.join(this.nowPath, path.parse(this.fileName).name + '.vtt')
+        const subtitltPath = path.join(this.nowPath, nowVideoFileParse.name + '.vtt')
         await fs.promises.stat(subtitltPath)
 
         this.subtitle.path = subtitltPath
@@ -113,7 +119,7 @@ export default Vue.extend({
         const subtitleExt = /sub|srt|sbv|vtt|ssa|ass|smi|lrc/
         let existSubtitle = ''
         let fastForBreak = false
-        const nowVideoName = path.parse(this.fileName).name
+        const nowVideoName = nowVideoFileParse.name
 
         for (const nowFile of (await fs.promises.readdir(this.nowPath))) {
           if (!nowFile.match('.')) continue
@@ -137,12 +143,14 @@ export default Vue.extend({
             // if is not .vtt file get user agree and do convert and wait....
             this.subtitle.agreeTask = async () => {
               this.subtitle.proceed = true
+
+              const newSubtitleDest = path.join(this.nowPath, path.parse(existSubtitle).name + '.vtt')
               const subtitleBuffer = await fs.promises.readFile(path.join(this.nowPath, existSubtitle))
               const subtitleFormat = jschardet.detect(subtitleBuffer)
               const subtitleUtf8 = iconv.encode(iconv.decode(subtitleBuffer, subtitleFormat.encoding), 'utf-8').toString('utf-8')
-              await fs.promises.writeFile(path.join(this.nowPath, path.parse(existSubtitle).name + '.vtt'), subsrt.convert(subtitleUtf8, { format: 'vtt' }))
+              await fs.promises.writeFile(newSubtitleDest, subsrt.convert(subtitleUtf8, { format: 'vtt' }))
 
-              this.subtitle.path = path.join(this.nowPath, path.parse(existSubtitle).name + '.vtt')
+              this.subtitle.path = newSubtitleDest
               this.subtitle.proceed = false
               this.subtitle.dialog = false
               existSubtitle = null
