@@ -3,7 +3,7 @@
     <v-col cols="9">
       <v-card class="b__video-viewer__tv">
         <video controls v-if="videoSrc">
-          <source :src="videoSrc" :type="`video/${fileName.split('.')[1]}`" />
+          <source :src="videoSrc" :type="`video/${fileExt}`" />
           <track v-if="subtitle.path" :src="subtitle.path" kind="subtitles" default />
         </video>
       </v-card>
@@ -60,7 +60,7 @@ export default Vue.extend({
       type: String,
       required: true
     },
-    fileName: {
+    fileBase: {
       type: String,
       required: true
     }
@@ -76,6 +76,10 @@ export default Vue.extend({
         dialog: false,
         agreeTask: null,
         proceed: false
+      },
+      before: {
+        tableId: '',
+        docId: ''
       }
     }
   },
@@ -83,12 +87,7 @@ export default Vue.extend({
     async constructor () {
       // reset data
       this.videoFileList = []
-      this.subtitle = {
-        path: '',
-        dialog: false,
-        agreeTask: null,
-        proceed: false
-      }
+      this.subtitle.path = ''
       this.nowPath = ''
       this.videoSrc = ''
 
@@ -101,12 +100,22 @@ export default Vue.extend({
       })
 
       this.nowPath = dbResult.nowPath
-      this.videoFileList = dbResult.file
-      this.nowFileIndex = dbResult.file.map(item => item.fileName).indexOf(this.fileName)
-      const nowVideoFileParse = path.parse(this.fileName)
+
+      if (this.docId !== this.before.docId && this.tableId !== this.before.tableId && this.videoFileList.length !== dbResult.file.length) {
+        this.videoFileList = dbResult.file
+      }
+      this.nowFileIndex = dbResult.file.map(item => item.fileName).indexOf(this.fileBase)
+      this.before.tableId = dbResult.tableId
+      this.before.docId = dbResult.docId
+
+      const nowVideoFileParse = path.parse(this.fileBase)
 
       // check video file ext for support browser video source tag
-      this.videoSrc = path.join(this.nowPath, this.fileName)
+      const supportVideoExt = /mp4$|ogg$|webm$/i
+      if (nowVideoFileParse.ext.match(supportVideoExt)) {
+        this.videoSrc = path.join(this.nowPath, this.fileBase)
+      } else {
+      }
 
       // FIND EXIST SUBTITLE FILE AS SAME NOW FILE NAME AND EXT IS ${subtitleExt}.vtt
       try {
@@ -116,7 +125,7 @@ export default Vue.extend({
         this.subtitle.path = subtitltPath
       } catch {
         // if not exist and now directory, exist this.fileName + .${subtitleExt}, ask for consent and convert to .vtt and apply
-        const subtitleExt = /sub|srt|sbv|vtt|ssa|ass|smi|lrc/
+        const subtitleExt = /sub$|srt$|sbv$|vtt$|ssa$|ass$|smi$|lrc$/i
         let existSubtitle = ''
         let fastForBreak = false
         const nowVideoName = nowVideoFileParse.name
@@ -163,6 +172,11 @@ export default Vue.extend({
   },
   async created () {
     await this.constructor()
+  },
+  computed: {
+    fileExt () {
+      return path.parse(this.fileBase).ext.replace('.', '')
+    }
   },
   watch: {
     '$route' () {

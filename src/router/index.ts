@@ -19,7 +19,7 @@ const routes = [
     component: oneDirectory
   },
   {
-    path: '/video/:tableId/:docId/:fileName',
+    path: '/video/:tableId/:docId/:fileBase',
     name: 'videoViewer',
     props: true,
     component: videoViewer
