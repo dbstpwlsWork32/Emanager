@@ -11,6 +11,7 @@
       style="width:100%;padding-bottom:55%;background:#000;"
     ></div>
     <v-img
+      v-if="thumbnailPath !== ''"
       :src="thumbnailPath"
       aspect-ratio="1.8"
     />
