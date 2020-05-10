@@ -193,17 +193,16 @@ export default Vue.extend({
       this.syncDialog = true
       ipcRenderer.send('docDelete', { tableId: this.dir.tableId, nowPath: this.dir.nowPath, isRoot, rootPath })
       ipcRenderer.once('docDelete', async () => {
-        const thumbnailDirPath = ThumbnailManager.getBasePath(this.dir.tableId, this.dir._id)
+        let thumbnailDirPath = ThumbnailManager.getBasePath(this.dir.tableId, this.dir._id)
         try {
-          await fs.promises.stat(thumbnailDirPath)
-
           if (isRoot) {
             const pathSep = thumbnailDirPath.split(path.sep)
             pathSep.splice(pathSep.length - 1, 1)
-            await rmdir(pathSep.join(path.sep))
-          } else {
-            await rmdir(thumbnailDirPath)
+            thumbnailDirPath = pathSep.join(path.sep)
           }
+
+          await fs.promises.stat(thumbnailDirPath)
+          await rmdir(thumbnailDirPath)
         } catch {}
 
         this.syncDialog = false
