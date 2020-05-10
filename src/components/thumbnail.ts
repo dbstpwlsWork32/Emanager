@@ -3,7 +3,7 @@ import mkdirp from 'mkdirp'
 import path from 'path'
 import { spawn } from 'child_process'
 import { remote } from 'electron'
-import { ffmpegBin } from '@/binaries'
+import { ffmpegBin, ffprobeBin } from '@/binaries'
 
 interface File {
   fileName: string;
@@ -38,6 +38,42 @@ class ThumbnailManager {
 
   static getBasePath (tableId: string, docId: string): string {
     return path.join(remote.app.getPath('appData'), 'emanager_doc', tableId, docId)
+  }
+
+  async getFFmpegVideoThmOpt (scale: string, input: string, output: string): Promise<string[]> {
+    const duration: number = await new Promise(resolve => {
+      let durationData: number
+
+      const ffprobe = spawn(ffprobeBin, [
+        '-i', input,
+        '-show_entries', 'format=duration',
+        '-v', 'quiet'
+      ])
+      ffprobe.stdout.on('data', data => {
+        durationData = parseInt(data.toString().replace(/\[\/?FORMAT\]|\s|\n/g, '').split('=').slice(-1)[0])
+      })
+      ffprobe.on('exit', () => {
+        resolve(durationData)
+      })
+      ffprobe.stderr.on('data', data => {
+        throw new Error(`ffprobe error ${data.toString()}`)
+      })
+    })
+
+    const ffmpegArgs = [
+      '-ss',
+      `${Math.round(duration / 2)}`,
+      '-i',
+      input,
+      '-vf',
+      scale,
+      '-vframes',
+      '1',
+      '-y',
+      output
+    ]
+
+    return ffmpegArgs
   }
 }
 
@@ -90,18 +126,7 @@ class ThumbnailDir extends ThumbnailManager {
     let ffmpegArgs: string[]
     if (representFile.fileType === 'video') {
       videoConvert = true
-      ffmpegArgs = [
-        '-ss',
-        '7',
-        '-i',
-        path.join(this.fromPath, representFile.fileName),
-        '-vf',
-        'scale=200:-1',
-        '-vframes',
-        '1',
-        '-y',
-        path.join(this.baseDir, `${this.prefix.dirThumbnail}${path.parse(representFile.fileName).name}.jpg`)
-      ]
+      ffmpegArgs = await this.getFFmpegVideoThmOpt('scale=200:-1', path.join(this.fromPath, representFile.fileName), path.join(this.baseDir, `${this.prefix.dirThumbnail}${path.parse(representFile.fileName).name}.jpg`))
     } else {
       ffmpegArgs = [
         '-i',
@@ -157,18 +182,7 @@ class VideoThumnail extends ThumbnailManager {
       await fs.promises.stat(outputFile)
     } catch {
       // if not exist, make thumbnail
-      const ffmpegArgs = [
-        '-ss',
-        '7',
-        '-i',
-        path.join(this.fromPath, this.fileBase),
-        '-vf',
-        'scale=320:-1',
-        '-vframes',
-        '1',
-        '-y',
-        outputFile
-      ]
+      const ffmpegArgs = await this.getFFmpegVideoThmOpt('scale=320:-1', path.join(this.fromPath, this.fileBase), outputFile)
 
       await new Promise(resolve => {
         const ffmpeg = spawn(ffmpegBin, ffmpegArgs)

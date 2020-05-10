@@ -31,3 +31,4 @@ const binariesPath =
     : path.join(root, './resources', nowPlatfrom, './bin')
 
 export const ffmpegBin = path.resolve(path.join(binariesPath, './ffmpeg.exe'))
+export const ffprobeBin = path.resolve(path.join(binariesPath, './ffprobe.exe'))
