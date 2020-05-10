@@ -44,11 +44,6 @@ export default Vue.extend({
         icon: 'mdi-folder-clock',
         text: 'Current',
         path: '/current'
-      },
-      {
-        icon: 'mdi-text-box-plus',
-        text: 'Collection',
-        path: '/collection'
       }
     ]
   })

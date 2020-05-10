@@ -100,7 +100,6 @@ export default Vue.extend({
       overall: [],
       user: {},
       nowPath: '',
-      folderName: '',
       dirPath: [],
       currentItem: '',
       fileStat: {
@@ -108,13 +107,14 @@ export default Vue.extend({
         video: [],
         game: [],
         audio: []
-      }
+      },
+      folderName: ''
     }
   },
   props: ['tableId', 'docId'],
   methods: {
     async resetDocument (tableId, docId) {
-      const migration = result => {
+      const migration = async result => {
         this.dir = result.dir
         this.file = result.file
         this.overall = result.overall
@@ -137,7 +137,7 @@ export default Vue.extend({
       }
 
       ipcRenderer.send('db_oneDirRequest', { tableId, query: { _id: docId } })
-      await new Promise((resolve) => {
+      const dbResult = await new Promise((resolve) => {
         ipcRenderer.once('db_oneDirRequest', (ev, result) => {
           result.dir = result.dir.map(item => {
             return {
@@ -145,10 +145,10 @@ export default Vue.extend({
               name: path.parse(item.nowPath).base
             }
           })
-          migration(result)
-          resolve()
+          resolve(result)
         })
       })
+      migration(dbResult)
 
       if (this.dirPath.length) this.scrollEvent(true)
     },

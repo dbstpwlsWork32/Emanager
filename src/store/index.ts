@@ -105,7 +105,8 @@ export default new Vuex.Store({
         const index = state.rootTableList.map((item: any) => item.tableId).indexOf(tableId)
         return {
           nowPath: state.rootTableList[index].nowPath,
-          name: state.rootTableList[index].name
+          name: state.rootTableList[index].name,
+          _id: state.rootTableList[index]._id
         }
       }
     },
