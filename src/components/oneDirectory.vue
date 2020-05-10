@@ -12,31 +12,27 @@
     <v-toolbar
       dark
       background-color="blue darken-3"
+      v-if="this.dir.length"
     >
+      <div style="margin-right: 10px">DIR SEARCH ALL : </div>
       <v-row>
-        <v-col cols="4">
-          <v-text-field
-            prepend-icon="mdi-magnify"
-            style="top: 9px; position: relative"
-            v-model="search.text"
-          />
-        </v-col>
         <v-col cols="3">
           <v-select
             style="top: 9px"
             :items="search.sort.items"
             v-model="search.sort.select"
+            @change="sort()"
           />
         </v-col>
         <v-col cols="3">
           <v-btn-toggle
             mandatory
           >
-            <v-btn>
-              <v-icon>mdi-arrow-down</v-icon>
-            </v-btn>
-            <v-btn>
+            <v-btn @click="search.ascending = 1; sort()">
               <v-icon>mdi-arrow-up</v-icon>
+            </v-btn>
+            <v-btn @click="search.ascending = -1; sort()">
+              <v-icon>mdi-arrow-down</v-icon>
             </v-btn>
           </v-btn-toggle>
         </v-col>
@@ -134,7 +130,7 @@ export default Vue.extend({
       overall: [],
       user: {},
       nowPath: '',
-      dirPath: [],
+      toSeeDir: [],
       currentItem: '',
       fileStat: {
         picture: [],
@@ -144,17 +140,17 @@ export default Vue.extend({
       },
       folderName: '',
       search: {
-        text: '',
-        ascending: false,
+        ascending: 1,
         sort: {
           select: 'name',
           items: [
             'name',
             'favorite',
-            'created'
+            'modified'
           ]
         }
-      }
+      },
+      chilDirNoIpcSend: false
     }
   },
   props: ['tableId', 'docId'],
@@ -165,7 +161,7 @@ export default Vue.extend({
         this.file = result.file
         this.overall = result.overall
         this.nowPath = result.nowPath
-        this.dirPath = result.dirPath
+        this.toSeeDir = result.toSeeDir
         this.user = result.user
 
         this.fileStat = {
@@ -180,6 +176,7 @@ export default Vue.extend({
 
         const rootName = this.$store.getters.rootTableName(this.tableId)
         this.folderName = this.nowPath.replace(rootName.nowPath, rootName.name).replace(/\\/g, '/')
+        this.chilDirNoIpcSend = false
       }
 
       ipcRenderer.send('db_oneDirRequest', { tableId, query: { _id: docId } })
@@ -196,7 +193,7 @@ export default Vue.extend({
       })
       migration(dbResult)
 
-      if (this.dirPath.length) this.scrollEvent(true)
+      if (this.toSeeDir.length) this.scrollEvent(true)
     },
     getFilePath (fileName) {
       return `file:///${filePathUrl(path.join(this.nowPath, fileName))}`
@@ -208,31 +205,91 @@ export default Vue.extend({
       if (window.scrollY + window.innerHeight <= document.documentElement.scrollHeight - 300) {
         return false
       }
-
       window.removeEventListener('scroll', this.scrollEvent)
-      ipcRenderer.send('getChildDirDocs', {
-        tableId: this.tableId,
-        childList: this.dirPath.splice(0, 15),
-        startDirIndex: this.dir.length - 1
-      })
-      ipcRenderer.once('getChildDirDocs', (ev, result) => {
-        result = result.map(item => {
-          return {
-            ...item,
-            name: path.parse(item.nowPath).base
-          }
+
+      if (!this.chilDirNoIpcSend) {
+        ipcRenderer.send('getChildDirDocs', {
+          tableId: this.tableId,
+          childList: this.toSeeDir.splice(0, 15),
+          startDirIndex: this.dir.length - 1
         })
-        this.dir = this.dir.concat(result)
+        ipcRenderer.once('getChildDirDocs', (ev, result) => {
+          result = result.map(item => {
+            return {
+              ...item,
+              name: path.parse(item.nowPath).base
+            }
+          })
+          this.dir = this.dir.concat(result)
+          this.$nextTick(() => {
+            if (this.toSeeDir.length) {
+              if (repeat) this.scrollEvent(repeat)
+              window.addEventListener('scroll', this.scrollEvent)
+            }
+          })
+        })
+      } else {
+        this.dir = this.dir.concat(this.toSeeDir.splice(0, 15))
         this.$nextTick(() => {
-          if (this.dirPath.length) {
+          if (this.toSeeDir.length) {
             if (repeat) this.scrollEvent(repeat)
             window.addEventListener('scroll', this.scrollEvent)
           }
         })
-      })
+      }
     },
     deleteDir (docId) {
       this.dir.splice(this.dir.map(item => item._id).indexOf(docId), 1)
+    },
+    async sort () {
+      const getSortOpt = () => {
+        let key = ''
+        switch (this.search.sort.select) {
+          case 'name':
+            key = 'nowPath'
+            break
+          case 'favorite':
+            key = 'user.rate'
+            break
+          case 'modified':
+            key = 'mtime'
+            break
+        }
+
+        const returnObj = {}
+        returnObj[key] = this.search.ascending
+
+        return returnObj
+      }
+
+      let sortChildDocs = await new Promise(resolve => {
+        let sort = {}
+        sort = getSortOpt()
+
+        ipcRenderer.send('find_sort', { tableId: this.tableId, query: { $not: { isRoot: true } }, sort })
+        ipcRenderer.once('find_sort', (ev, rs) => {
+          resolve(rs)
+        })
+      })
+
+      sortChildDocs = sortChildDocs.filter(item => item.file.length > 0).map(item => {
+        return {
+          ...item,
+          name: path.parse(item.nowPath).base,
+          tableId: this.tableId,
+          docId: item._id
+        }
+      })
+
+      this.dir = sortChildDocs.splice(0, 15)
+      if (sortChildDocs.length) {
+        this.chilDirNoIpcSend = true
+
+        this.toSeeDir = sortChildDocs
+        this.scrollEvent(true)
+      }
+
+      return false
     }
   },
   computed: {

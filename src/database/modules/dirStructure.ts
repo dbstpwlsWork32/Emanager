@@ -17,7 +17,7 @@ interface OneDirReadResultAll {
   dir: OneDirReadResultAll[] & string[];
   file: FileResult[];
   overall: overall[];
-  ctime: Date;
+  mtime: Date;
 }
 interface SettingGetFile {
   regExp: RegExp[];
@@ -138,12 +138,12 @@ class GetDirStructure {
       if ((readPath.split(path.sep).length - rootPath.split(path.sep).length) >= 15) throw new Error('File size is too big')
 
       let listStrings: string[] = []
-      let oneDirReadResult: OneDirReadResultAll = { nowPath: readPath, dir: [], file: [], overall: [], ctime: new Date() }
+      let oneDirReadResult: OneDirReadResultAll = { nowPath: readPath, dir: [], file: [], overall: [], mtime: new Date() }
 
       try {
         listStrings = await fs.promises.readdir(readPath)
         const readPathStat = await fs.promises.stat(readPath)
-        oneDirReadResult.ctime = readPathStat.ctime
+        oneDirReadResult.mtime = readPathStat.mtime
       } catch (err) {
         throw new Error(`first find error ${readPath}\n${err}`)
       }

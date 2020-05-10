@@ -13,7 +13,7 @@ interface NowDirList {
   file: any[];
   _id: string;
   user: any;
-  ctime: Date;
+  mtime: Date;
 }
 const getChildDirDocs = async (tableId: string, childList: string[]): Promise<NowDirList[]> => {
   let nowDirList: NowDirList[] = []
@@ -35,7 +35,7 @@ const getChildDirDocs = async (tableId: string, childList: string[]): Promise<No
       _id: childResult._id,
       user: childResult.user,
       file: thumbnailFile,
-      ctime: childResult.ctime
+      mtime: childResult.mtime
     })
   }
 
@@ -163,12 +163,12 @@ ipcMain.on('db_first-loading', async (ev, args) => {
 ipcMain.on('db_oneDirRequest', async (ev, { tableId, query }) => {
   interface SendData {
     dir: NowDirList[];
-    dirPath: string[];
+    toSeeDir: string[];
     file: any[];
     overall: any[];
     nowPath: any;
     user: any;
-    ctime: Date;
+    mtime: Date;
   }
 
   try {
@@ -185,12 +185,12 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, query }) => {
 
     sendData = {
       nowPath: rootResult.nowPath,
-      dirPath: rootResult.dir,
       overall: rootResult.overall,
       file: rootResult.file,
       user: rootResult.user,
       dir: nowDirList,
-      ctime: rootResult.ctime
+      toSeeDir: rootResult.dir,
+      mtime: rootResult.mtime
     }
 
     ev.reply('db_oneDirRequest', sendData)
@@ -403,8 +403,23 @@ ipcMain.on('docSync', async (ev, { tableId, nowPath }) => {
   }
 })
 
-ipcMain.on('find_child', async (ev, { tableId, query }) => {
-  const childResults = await db.childTable.find(tableId, query)
+ipcMain.on('find_child', async (ev, { tableId, query, addtional }) => {
+  const childResults = await db.childTable.find(tableId, query, addtional)
 
   ev.reply('find_child', childResults)
+})
+
+ipcMain.on('find_sort', async (ev, { tableId, query, sort }) => {
+  try {
+    const docs = await new Promise((resolve, reject) => {
+      dbTask.db[tableId].table.find(query).sort(sort).exec((er: NodeJS.ErrnoException, docs: NEDBDirDocument[]) => {
+        if (!er) resolve(docs)
+        else reject(er)
+      })
+    })
+
+    ev.reply('find_sort', docs)
+  } catch (er) {
+    console.log(`ipc find_sort er sort : ${console.info(sort)} query: ${console.info(query)}\n${er}`)
+  }
 })
