@@ -12,7 +12,8 @@ interface NowDirList {
   tableId: string;
   file: any[];
   _id: string;
-  user: any
+  user: any;
+  ctime: Date;
 }
 const getChildDirDocs = async (tableId: string, childList: string[]): Promise<NowDirList[]> => {
   let nowDirList: NowDirList[] = []
@@ -33,7 +34,8 @@ const getChildDirDocs = async (tableId: string, childList: string[]): Promise<No
       tableId: tableId,
       _id: childResult._id,
       user: childResult.user,
-      file: thumbnailFile
+      file: thumbnailFile,
+      ctime: childResult.ctime
     })
   }
 
@@ -165,7 +167,8 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, query }) => {
     file: any[];
     overall: any[];
     nowPath: any;
-    user: any
+    user: any;
+    ctime: Date;
   }
 
   try {
@@ -186,7 +189,8 @@ ipcMain.on('db_oneDirRequest', async (ev, { tableId, query }) => {
       overall: rootResult.overall,
       file: rootResult.file,
       user: rootResult.user,
-      dir: nowDirList
+      dir: nowDirList,
+      ctime: rootResult.ctime
     }
 
     ev.reply('db_oneDirRequest', sendData)
