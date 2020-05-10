@@ -98,4 +98,3 @@ if (isDevelopment) {
 
 // ================ set ipc protocol
 import './protocol/ipc'
-import './protocol/server'

@@ -100,7 +100,7 @@
 <script>
 import Vue from 'vue'
 import { ipcRenderer, shell } from 'electron'
-import { ThumbnailDir } from './thumbnail'
+import { ThumbnailDir } from '../thumbnail'
 
 export default Vue.extend({
   name: 'come__oneDirectory-simple',

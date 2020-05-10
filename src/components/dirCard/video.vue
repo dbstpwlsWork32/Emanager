@@ -22,7 +22,7 @@
 
 <script>
 import Vue from 'vue'
-import { VideoThumnail } from '../dirCard/thumbnail'
+import { VideoThumnail } from '../thumbnail'
 
 export default Vue.extend({
   name: 'come__videoCard',

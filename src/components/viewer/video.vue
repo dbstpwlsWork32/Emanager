@@ -3,7 +3,7 @@
     <v-col cols="9">
       <v-card class="b__video-viewer__tv">
         <video controls v-if="videoSrc">
-          <source :src="videoSrc" :type="`video/${fileExt}`" />
+          <source :src="videoSrc" :type="`video/${videoExt}`" />
           <track v-if="subtitle.path" :src="subtitle.path" kind="subtitles" default />
         </video>
       </v-card>
@@ -36,6 +36,18 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog v-model="video.dialog" persistent max-width="330">
+      <v-card>
+        <v-card-title class="headline">can't play {{videoExt}} video extension</v-card-title>
+        <v-card-text>play with external player?</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="green darken-1" text @click="video.openExternal">Yes!</v-btn>
+          <v-btn color="red darken-1" text @click="video.dialog = false">No!</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-row>
 </template>
 
@@ -44,7 +56,7 @@ import Vue from 'vue'
 import videoCard from '../dirCard/video'
 import fs from 'fs'
 import path from 'path'
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, shell } from 'electron'
 import subsrt from 'subsrt'
 import iconv from 'iconv-lite'
 import jschardet from 'jschardet'
@@ -75,11 +87,16 @@ export default Vue.extend({
         path: '',
         dialog: false,
         agreeTask: null,
-        proceed: false
+        proceed: null
       },
       before: {
         tableId: '',
         docId: ''
+      },
+      videoExt: '',
+      video: {
+        dialog: false,
+        openExternal: null
       }
     }
   },
@@ -108,14 +125,22 @@ export default Vue.extend({
       this.before.docId = this.docId
 
       const nowVideoFileParse = path.parse(this.fileBase)
+      this.videoExt = nowVideoFileParse.ext.replace('.', '')
 
-      // check video file ext for support browser video source tag
-      const supportVideoExt = /mp4$|ogg$|webm$/i
-      if (nowVideoFileParse.ext.match(supportVideoExt)) {
+      const videoSupExt = /mp4$|ogg$|webm$/i
+      if (nowVideoFileParse.ext.match(videoSupExt)) {
         this.videoSrc = path.join(this.nowPath, this.fileBase)
+        this.subtitleTask()
       } else {
+        this.video.openExternal = () => {
+          shell.openExternal(path.join(this.nowPath, this.fileBase))
+          this.video.dialog = false
+        }
+        this.video.dialog = true
       }
-
+    },
+    async subtitleTask () {
+      const nowVideoFileParse = path.parse(this.fileBase)
       // FIND EXIST SUBTITLE FILE AS SAME NOW FILE NAME AND EXT IS ${subtitleExt}.vtt
       try {
         const subtitltPath = path.join(this.nowPath, nowVideoFileParse.name + '.vtt')
@@ -171,11 +196,6 @@ export default Vue.extend({
   },
   async created () {
     await this.constructor()
-  },
-  computed: {
-    fileExt () {
-      return path.parse(this.fileBase).ext.replace('.', '')
-    }
   },
   watch: {
     '$route' () {
