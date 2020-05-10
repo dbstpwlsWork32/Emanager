@@ -100,7 +100,9 @@
 <script>
 import Vue from 'vue'
 import { ipcRenderer, shell } from 'electron'
-import { ThumbnailDir } from '../thumbnail'
+import { ThumbnailDir, ThumbnailManager } from '../thumbnail'
+import path from 'path'
+import fs from 'fs'
 
 export default Vue.extend({
   name: 'come__oneDirectory-simple',
@@ -167,12 +169,43 @@ export default Vue.extend({
       })
     },
     docDelete () {
+      const rmdir = async rootPath => {
+        const readList = await fs.promises.readdir(rootPath)
+
+        for (const file of readList) {
+          const nowPath = path.join(rootPath, file)
+          const stat = await fs.promises.stat(nowPath)
+          if (stat.isDirectory()) {
+            await rmdir(nowPath)
+          } else {
+            await fs.promises.unlink(nowPath)
+          }
+        }
+
+        await fs.promises.rmdir(rootPath)
+
+        return false
+      }
+
       const rootPath = this.$store.getters.rootTableName(this.dir.tableId).nowPath
       const isRoot = rootPath === this.dir.nowPath
 
       this.syncDialog = true
       ipcRenderer.send('docDelete', { tableId: this.dir.tableId, nowPath: this.dir.nowPath, isRoot, rootPath })
-      ipcRenderer.once('docDelete', () => {
+      ipcRenderer.once('docDelete', async () => {
+        const thumbnailDirPath = ThumbnailManager.getBasePath(this.dir.tableId, this.dir._id)
+        try {
+          await fs.promises.stat(thumbnailDirPath)
+
+          if (isRoot) {
+            const pathSep = thumbnailDirPath.split(path.sep)
+            pathSep.splice(pathSep.length - 1, 1)
+            await rmdir(pathSep.join(path.sep))
+          } else {
+            await rmdir(thumbnailDirPath)
+          }
+        } catch {}
+
         this.syncDialog = false
         if (isRoot) {
           this.$store.commit('deleteByPath', this.dir.nowPath)
