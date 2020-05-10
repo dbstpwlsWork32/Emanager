@@ -9,6 +9,40 @@
       {{folderName}}
     </v-banner>
 
+    <v-toolbar
+      dark
+      background-color="blue darken-3"
+    >
+      <v-row>
+        <v-col cols="4">
+          <v-text-field
+            prepend-icon="mdi-magnify"
+            style="top: 9px; position: relative"
+            v-model="search.text"
+          />
+        </v-col>
+        <v-col cols="3">
+          <v-select
+            style="top: 9px"
+            :items="search.sort.items"
+            v-model="search.sort.select"
+          />
+        </v-col>
+        <v-col cols="3">
+          <v-btn-toggle
+            mandatory
+          >
+            <v-btn>
+              <v-icon>mdi-arrow-down</v-icon>
+            </v-btn>
+            <v-btn>
+              <v-icon>mdi-arrow-up</v-icon>
+            </v-btn>
+          </v-btn-toggle>
+        </v-col>
+      </v-row>
+    </v-toolbar>
+
     <v-tabs v-model="currentItem">
       <v-tab v-if="dir.length">Folder: {{dir.length}}</v-tab>
       <v-tab v-if="fileStat.picture.length">Picture: {{fileStat.picture.length}}</v-tab>
@@ -108,7 +142,19 @@ export default Vue.extend({
         game: [],
         audio: []
       },
-      folderName: ''
+      folderName: '',
+      search: {
+        text: '',
+        ascending: false,
+        sort: {
+          select: 'name',
+          items: [
+            'name',
+            'favorite',
+            'created'
+          ]
+        }
+      }
     }
   },
   props: ['tableId', 'docId'],
