@@ -24,7 +24,8 @@ export default new Vuex.Store({
       rootTableList: [],
       isAllLoad: false,
       isFullScreen: false,
-      proceedBackground: 0
+      proceedBackground: 0,
+      sortCache: []
     }
   },
   mutations: {
@@ -51,6 +52,9 @@ export default new Vuex.Store({
     },
     backgroundProceed (state, update: number) {
       state.proceedBackground += update
+    },
+    sortCache (state, value) {
+      state.sortCache = value
     }
   },
   actions: {

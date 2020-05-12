@@ -156,7 +156,7 @@ export default Vue.extend({
   props: ['tableId', 'docId'],
   methods: {
     async resetDocument (tableId, docId) {
-      const migration = async result => {
+      const migration = result => {
         this.dir = result.dir
         this.file = result.file
         this.overall = result.overall
@@ -179,19 +179,38 @@ export default Vue.extend({
         this.chilDirNoIpcSend = false
       }
 
-      ipcRenderer.send('db_oneDirRequest', { tableId, query: { _id: docId } })
-      const dbResult = await new Promise((resolve) => {
-        ipcRenderer.once('db_oneDirRequest', (ev, result) => {
-          result.dir = result.dir.map(item => {
-            return {
-              ...item,
-              name: path.parse(item.nowPath).base
-            }
+      if (this.$store.state.sortCache.length) {
+        ipcRenderer.send('find_child', { tableId, query: { _id: docId } })
+        const dbResult = await new Promise((resolve) => {
+          ipcRenderer.once('find_child', (ev, [result]) => {
+            resolve(result)
           })
-          resolve(result)
         })
-      })
-      migration(dbResult)
+
+        migration({
+          dir: this.$store.state.sortCache.slice(0, 15),
+          file: dbResult.file,
+          overall: dbResult.overall,
+          nowPath: dbResult.nowPath,
+          toSeeDir: this.$store.state.sortCache.slice(15),
+          user: dbResult.user
+        })
+        if (this.$store.state.sortCache.length > 15) this.chilDirNoIpcSend = true
+      } else {
+        ipcRenderer.send('db_oneDirRequest', { tableId, query: { _id: docId } })
+        const dbResult = await new Promise((resolve) => {
+          ipcRenderer.once('db_oneDirRequest', (ev, result) => {
+            result.dir = result.dir.map(item => {
+              return {
+                ...item,
+                name: path.parse(item.nowPath).base
+              }
+            })
+            resolve(result)
+          })
+        })
+        migration(dbResult)
+      }
 
       if (this.toSeeDir.length) this.scrollEvent(true)
     },
@@ -281,11 +300,13 @@ export default Vue.extend({
         }
       })
 
-      this.dir = sortChildDocs.splice(0, 15)
-      if (sortChildDocs.length) {
+      this.$store.commit('sortCache', sortChildDocs)
+
+      this.dir = sortChildDocs.slice(0, 15)
+      if (sortChildDocs.length > 15) {
         this.chilDirNoIpcSend = true
 
-        this.toSeeDir = sortChildDocs
+        this.toSeeDir = sortChildDocs.slice(15)
         this.scrollEvent(true)
       }
 
@@ -337,6 +358,7 @@ export default Vue.extend({
   },
   beforeDestroy () {
     window.removeEventListener('scroll', this.scrollEvent)
+    this.$store.commit('sortCache', [])
   },
   components: {
     dirCard,
