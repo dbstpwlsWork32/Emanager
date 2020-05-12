@@ -1,105 +1,25 @@
 <template>
   <v-list>
-    <v-list-group>
+    <v-list-group
+      v-for="(dirs, index) in ipcCache"
+      :key="`heart-${index}`"
+    >
       <template v-slot:activator>
-        <v-list-item-content @click="getDocsByHeartNum(5)">
-          <v-list-item-title>5 Heart</v-list-item-title>
+        <v-list-item-content @click="getDocsByHeartNum(index)">
+          <v-list-item-title>{{index}} Heart</v-list-item-title>
         </v-list-item-content>
       </template>
 
       <v-list-item>
         <v-list-item-content style="max-height: 70vh; overflow-y: auto">
           <v-row no-gutters>
-            <p v-if="!ipcCache[5].length">NO ITEMS....</p>
-            <dirSimpleCard
-              v-for="dir in ipcCache[5]"
-              :key="dir._id"
-              :dir="dir"
-            />
-          </v-row>
-        </v-list-item-content>
-      </v-list-item>
-    </v-list-group>
-
-    <v-list-group>
-      <template v-slot:activator>
-        <v-list-item-content @click="getDocsByHeartNum(4)">
-          <v-list-item-title>4 Heart</v-list-item-title>
-        </v-list-item-content>
-      </template>
-
-      <v-list-item>
-        <v-list-item-content style="max-height: 70vh; overflow-y: auto">
-          <v-row no-gutters>
-            <p v-if="!ipcCache[4].length">NO ITEMS....</p>
-            <dirSimpleCard
-              v-for="dir in ipcCache[4]"
-              :key="dir._id"
-              :dir="dir"
-            />
-          </v-row>
-        </v-list-item-content>
-      </v-list-item>
-    </v-list-group>
-
-    <v-list-group>
-      <template v-slot:activator>
-        <v-list-item-content @click="getDocsByHeartNum(3)">
-          <v-list-item-title>3 Heart</v-list-item-title>
-        </v-list-item-content>
-      </template>
-
-      <v-list-item>
-        <v-list-item-content style="max-height: 70vh; overflow-y: auto">
-          <v-row no-gutters>
-            <p v-if="!ipcCache[3].length">NO ITEMS....</p>
-            <dirSimpleCard
-              v-for="dir in ipcCache[3]"
-              :key="dir._id"
-              :dir="dir"
-            />
-          </v-row>
-        </v-list-item-content>
-      </v-list-item>
-    </v-list-group>
-
-    <v-list-group>
-      <template v-slot:activator>
-        <v-list-item-content @click="getDocsByHeartNum(2)">
-          <v-list-item-title>2 Heart</v-list-item-title>
-        </v-list-item-content>
-      </template>
-
-      <v-list-item>
-        <v-list-item-content style="max-height: 70vh; overflow-y: auto">
-          <v-row no-gutters>
-            <p v-if="!ipcCache[2].length">NO ITEMS....</p>
-            <dirSimpleCard
-              v-for="dir in ipcCache[2]"
-              :key="dir._id"
-              :dir="dir"
-            />
-          </v-row>
-        </v-list-item-content>
-      </v-list-item>
-    </v-list-group>
-
-    <v-list-group>
-      <template v-slot:activator>
-        <v-list-item-content @click="getDocsByHeartNum(1)">
-          <v-list-item-title>1 Heart</v-list-item-title>
-        </v-list-item-content>
-      </template>
-
-      <v-list-item>
-        <v-list-item-content style="max-height: 70vh; overflow-y: auto">
-          <v-row no-gutters>
-            <p v-if="!ipcCache[1].length">NO ITEMS....</p>
-            <dirSimpleCard
-              v-for="dir in ipcCache[1]"
-              :key="dir._id"
-              :dir="dir"
-            />
+            <p v-if="!ipcCache[index].length">NO ITEMS....</p>
+            <template v-for="dir in dirs">
+              <dirSimpleCard
+                :dir="dir"
+                :key="dir._id"
+              />
+            </template>
           </v-row>
         </v-list-item-content>
       </v-list-item>
@@ -127,7 +47,8 @@ export default Vue.extend({
     }
   },
   methods: {
-    async getDocsByHeartNum (heartNum) {
+    async getDocsByHeartNum (_heartNum) {
+      const heartNum = parseInt(_heartNum)
       const sendIpc = async tableId => {
         const result = await new Promise(resolve => {
           ipcRenderer.send('find_child', { tableId, query: { user: { rate: heartNum } } })
