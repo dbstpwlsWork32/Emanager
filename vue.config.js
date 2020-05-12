@@ -11,7 +11,10 @@ module.exports = {
           filter: [
             "**/*"
           ]
-        }]
+        }],
+        win: {
+          icon: 'public/icon.png'
+        }
       }
     }
   },

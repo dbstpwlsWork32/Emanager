@@ -2,6 +2,8 @@
 
 entertainment file and entertainment site search and manage
 
+[v0.5.0](https://github.com/dbstpwlsWork32/Emanager/releases/tag/v0.5.0)
+
 ## FEATURE
 ---
 
