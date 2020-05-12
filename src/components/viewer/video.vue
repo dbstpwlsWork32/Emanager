@@ -5,10 +5,19 @@
         <video controls v-if="videoSrc"
           @keydown.right.prevent="videoNext"
           @keydown.left.prevent="videoPrev"
+          @timeupdate="videoTimeUpdate"
+          @ended="videoEndEvent"
         >
           <source :src="videoSrc" :type="`video/${videoExt}`" />
           <track v-if="subtitle.path" :src="subtitle.path" kind="subtitles" default />
         </video>
+
+        <v-fade-transition>
+          <v-overlay absolute color="#000" v-if="videoEnd.overlay">
+            <p>Next : {{this.videoFileList[this.nowFileIndex + 1].fileName}}</p>
+            <p>{{this.videoEnd.duration}}%</p>
+          </v-overlay>
+        </v-fade-transition>
       </v-card>
     </v-col>
     <v-col cols="3" class="b__video-viewer__collect">
@@ -103,6 +112,11 @@ export default Vue.extend({
       },
       videoCTControl: {
         index: 0
+      },
+      videoEnd: {
+        overlay: false,
+        duration: 0,
+        interval: null
       }
     }
   },
@@ -112,6 +126,7 @@ export default Vue.extend({
       this.subtitle.path = ''
       this.nowPath = ''
       this.videoSrc = ''
+      this.videoCTControl.index = 0
 
       // BIND DB RESULT
       ipcRenderer.send('find_child', { tableId: this.tableId, query: { _id: this.docId } })
@@ -201,7 +216,9 @@ export default Vue.extend({
     },
     videoNext (e) {
       this.videoCTControl.index++
-      if (this.videoCTControl.index > Math.floor(e.target.duration / 5)) this.videoCTControl.index = Math.floor(e.target.duration / 5)
+      if (this.videoCTControl.index * 5 > e.target.duration) {
+        this.videoCTControl.index = Math.floor(e.target.duration / 5)
+      }
 
       setTimeout(() => {
         e.target.currentTime = this.videoCTControl.index * 5
@@ -214,6 +231,24 @@ export default Vue.extend({
       setTimeout(() => {
         e.target.currentTime = this.videoCTControl.index * 5
       }, 1)
+    },
+    videoTimeUpdate (e) {
+      this.videoCTControl.index = Math.floor(e.target.currentTime / 5)
+    },
+    videoEndEvent () {
+      this.videoEnd.overlay = true
+
+      if (this.nowFileIndex + 1 < this.videoFileList.length) {
+        this.videoEnd.interval = setInterval(() => {
+          this.videoEnd.duration += 1
+          if (this.videoEnd.duration >= 100) {
+            this.videoEnd.overlay = false
+            this.videoEnd.duration = 0
+            clearInterval(this.videoEnd.interval)
+            this.$router.replace(`/video/${this.tableId}/${this.docId}/${this.videoFileList[this.nowFileIndex + 1].fileName}`)
+          }
+        }, 40)
+      }
     }
   },
   async created () {
