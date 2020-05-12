@@ -3,10 +3,9 @@
     <v-col cols="9">
       <v-card class="b__video-viewer__tv">
         <video controls v-if="videoSrc"
-          @keydown.right.prevent="videoNext"
-          @keydown.left.prevent="videoPrev"
-          @timeupdate="videoTimeUpdate"
+          @focus="videoTagBlur"
           @ended="videoEndEvent"
+          @loadstart="addDocKeyEvent"
         >
           <source :src="videoSrc" :type="`video/${videoExt}`" />
           <track v-if="subtitle.path" :src="subtitle.path" kind="subtitles" default />
@@ -108,10 +107,8 @@ export default Vue.extend({
       videoExt: '',
       video: {
         dialog: false,
-        openExternal: null
-      },
-      videoCTControl: {
-        index: 0
+        openExternal: null,
+        el: null
       },
       videoEnd: {
         overlay: false,
@@ -123,10 +120,10 @@ export default Vue.extend({
   methods: {
     async constructor () {
       // reset data
+      this.removeDocKeyEvent()
       this.subtitle.path = ''
       this.nowPath = ''
       this.videoSrc = ''
-      this.videoCTControl.index = 0
 
       // BIND DB RESULT
       ipcRenderer.send('find_child', { tableId: this.tableId, query: { _id: this.docId } })
@@ -214,26 +211,37 @@ export default Vue.extend({
         }
       }
     },
-    videoNext (e) {
-      this.videoCTControl.index++
-      if (this.videoCTControl.index * 5 > e.target.duration) {
-        this.videoCTControl.index = Math.floor(e.target.duration / 5)
+    addDocKeyEvent (e) {
+      if (!this.video.el) {
+        this.video.el = e.target
+        document.addEventListener('keydown', this.videoEventByKeyDown)
       }
-
-      setTimeout(() => {
-        e.target.currentTime = this.videoCTControl.index * 5
-      }, 1)
     },
-    videoPrev (e) {
-      this.videoCTControl.index--
-      if (this.videoCTControl.index < 0) this.videoCTControl.index = 0
-
-      setTimeout(() => {
-        e.target.currentTime = this.videoCTControl.index * 5
-      }, 1)
+    removeDocKeyEvent (e) {
+      if (this.video.el) {
+        this.video.el = null
+        document.removeEventListener('keydown', this.videoEventByKeyDown)
+      }
     },
-    videoTimeUpdate (e) {
-      this.videoCTControl.index = Math.floor(e.target.currentTime / 5)
+    videoEventByKeyDown (e) {
+      switch (e.key) {
+        case 'ArrowRight':
+          this.video.el.currentTime += 5
+          break
+        case 'ArrowLeft':
+          this.video.el.currentTime -= 5
+          break
+        case ' ':
+          if (this.video.el.paused) {
+            this.video.el.play()
+          } else {
+            this.video.el.pause()
+          }
+          break
+      }
+    },
+    videoTagBlur (e) {
+      e.target.blur()
     },
     videoEndEvent () {
       this.videoEnd.overlay = true
@@ -253,6 +261,9 @@ export default Vue.extend({
   },
   async created () {
     await this.constructor()
+  },
+  beforeDestroy () {
+    this.removeDocKeyEvent()
   },
   watch: {
     '$route' () {
