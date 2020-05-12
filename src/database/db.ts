@@ -10,11 +10,9 @@ const makeDbList = (tableName: string, opt: any = {}): Nedb => {
 }
 
 const db: any = {
-  rootTable: makeDbList('rootTable', { autoload: true }),
-  userData: makeDbList('userData', { autoload: true })
+  rootTable: makeDbList('rootTable', { autoload: true })
 }
 db.rootTable.loadDatabase()
-db.userData.loadDatabase()
 
 const parentTable = {
   async insert (model: RootTableModel): Promise<NEDBRootTable> {
@@ -104,25 +102,8 @@ const childTable = {
   }
 }
 
-// userData handle
-interface UserDataTable<CK> {
-  like: {
-    1: string[],
-    2: string[],
-    3: string[],
-    4: string[],
-    5: string[]
-  },
-  collection: {
-    CK: string
-  }
-}
-const userDataTable = {
-}
-
 export default {
   parentTable,
   childTable,
-  userDataTable,
   db
 }

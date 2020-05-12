@@ -39,11 +39,6 @@ export default Vue.extend({
         icon: 'mdi-heart',
         text: 'Favorite',
         path: '/favorite'
-      },
-      {
-        icon: 'mdi-folder-clock',
-        text: 'Current',
-        path: '/current'
       }
     ]
   })
