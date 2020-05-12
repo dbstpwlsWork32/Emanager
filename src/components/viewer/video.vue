@@ -217,7 +217,7 @@ export default Vue.extend({
         document.addEventListener('keydown', this.videoEventByKeyDown)
       }
     },
-    removeDocKeyEvent (e) {
+    removeDocKeyEvent () {
       if (this.video.el) {
         this.video.el = null
         document.removeEventListener('keydown', this.videoEventByKeyDown)
