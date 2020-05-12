@@ -179,7 +179,8 @@ export default Vue.extend({
         this.chilDirNoIpcSend = false
       }
 
-      if (this.$store.state.sortCache.length) {
+      const sortCacheKey = tableId + docId
+      if (this.$store.state.sortCache[sortCacheKey]) {
         ipcRenderer.send('find_child', { tableId, query: { _id: docId } })
         const dbResult = await new Promise((resolve) => {
           ipcRenderer.once('find_child', (ev, [result]) => {
@@ -188,14 +189,14 @@ export default Vue.extend({
         })
 
         migration({
-          dir: this.$store.state.sortCache.slice(0, 15),
+          dir: this.$store.state.sortCache[sortCacheKey].slice(0, 15),
           file: dbResult.file,
           overall: dbResult.overall,
           nowPath: dbResult.nowPath,
-          toSeeDir: this.$store.state.sortCache.slice(15),
+          toSeeDir: this.$store.state.sortCache[sortCacheKey].slice(15),
           user: dbResult.user
         })
-        if (this.$store.state.sortCache.length > 15) this.chilDirNoIpcSend = true
+        if (this.$store.state.sortCache[sortCacheKey].length > 15) this.chilDirNoIpcSend = true
       } else {
         ipcRenderer.send('db_oneDirRequest', { tableId, query: { _id: docId } })
         const dbResult = await new Promise((resolve) => {
@@ -291,6 +292,7 @@ export default Vue.extend({
         })
       })
 
+      const sortCacheKey = this.tableId + this.docId
       sortChildDocs = sortChildDocs.filter(item => item.file.length > 0).map(item => {
         return {
           ...item,
@@ -300,7 +302,7 @@ export default Vue.extend({
         }
       })
 
-      this.$store.commit('sortCache', sortChildDocs)
+      this.$store.commit('sortCacheAdd', { key: sortCacheKey, value: sortChildDocs })
 
       this.dir = sortChildDocs.slice(0, 15)
       if (sortChildDocs.length > 15) {
@@ -358,7 +360,7 @@ export default Vue.extend({
   },
   beforeDestroy () {
     window.removeEventListener('scroll', this.scrollEvent)
-    this.$store.commit('sortCache', [])
+    this.$store.commit('sortCacheRemove', { key: this.tableId + this.docId })
   },
   components: {
     dirCard,

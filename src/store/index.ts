@@ -25,7 +25,7 @@ export default new Vuex.Store({
       isAllLoad: false,
       isFullScreen: false,
       proceedBackground: 0,
-      sortCache: []
+      sortCache: {}
     }
   },
   mutations: {
@@ -53,8 +53,15 @@ export default new Vuex.Store({
     backgroundProceed (state, update: number) {
       state.proceedBackground += update
     },
-    sortCache (state, value) {
-      state.sortCache = value
+    sortCacheAdd (state, { key, value }) {
+      let newItem: any = {}
+      newItem[key] = value
+      state.sortCache = Object.assign(state.sortCache, newItem)
+    },
+    sortCacheRemove (state, { key }) {
+      const removeItem: any = {}
+      removeItem[key] = null
+      state.sortCache = Object.assign(state.sortCache, removeItem)
     }
   },
   actions: {
