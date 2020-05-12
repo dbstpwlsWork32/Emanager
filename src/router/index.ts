@@ -3,6 +3,7 @@ import VueRouter from 'vue-router'
 import Home from '../views/Home.vue'
 import oneDirectory from '@/components/oneDirectory.vue'
 import videoViewer from '@/components/viewer/video.vue'
+import favorite from '@/views/pages/favorite.vue'
 
 Vue.use(VueRouter)
 
@@ -23,6 +24,11 @@ const routes = [
     name: 'videoViewer',
     props: true,
     component: videoViewer
+  },
+  {
+    path: '/favorite',
+    name: 'favorite',
+    component: favorite
   }
 ]
 
