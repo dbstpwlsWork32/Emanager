@@ -1,63 +1,57 @@
 # Emanager
 
-## concept
-
 entertainment file and entertainment site search and manage
 
-## USE LIST
-
-1. @vue/cli + electron (self config setting)
-
-## BE-TODO
-
-[ ] ENETERTAINMENET FILE SORT AND MANAGEMENT (LIKE PICTURES, VIDEOS, GAME)
-
-[ ] E-FILE SEARCH AND ADD SUBJECT TAG
-
-[ ] E-SITE WEB CROLLING
-
-
-## LAST-TODO
-
-[ ] VPN
-
-[ ] AUTO DOWNLOADER
-
-[ ] FILE MANAGER
-
-
-***
+## FEATURE
 ---
 
-## Project setup
-```
-yarn install
-```
+#### USERDATA FOLDER PATH
 
-### Compiles and hot-reloads for development
-```
-yarn serve
-```
+`C:\Users\${userName}\AppData\Roaming\emanager`, `C:\Users\${userName}\AppData\Roaming\emanager_doc`
 
-### Compiles and minifies for production
-```
-yarn build
-```
+#### Program authority
 
-### Run your unit tests
-```
-yarn test:unit
-```
+1. file read
 
-### Run your end-to-end tests
-```
-yarn test:e2e
-```
+2. file write/delete only on `USERDATA FOLDER PATH`
 
-### Lints and fixes files
-```
-yarn lint
-```
+3. No use any server
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+4. In program when click `Delete` on dir card, do delete only `database`, not delete real folder
+
+### Image viewer
+
+1. SHORT CUT
+
+| HOT KEY | DO  | WHEN  |
+| ---------------------|:---------------------:|:-------------------:|
+| up - arrow            |  GO NEXT PICTURE FOLDER  | IMAGE VIEWER MODE  |
+| down - arrow          |  PREV NEXT PICTURE FOLDER  | IMAGE VIEWER MODE  |
+
+### Video viewer
+
+1. Automatically watch subtitle file and convert to .vtt
+
+2. Extensions other than mp4, ogg, and webm are not supported ( Convert file to ffmpeg is too heavy ), so not supported file is open external program
+
+
+## Develope Lib & FrameWork
+---
+
+1. @vue/cli 3 + electron + vuex + vutify + typescript + nedb
+
+2. ffmepg
+
+## TODO
+---
+
+- [ ] E-FILE SEARCH AND ADD SUBJECT TAG
+
+- [ ] E-SITE WEB CROLLING
+
+## LAST-TODO
+---
+
+- [ ] VPN
+
+- [ ] web torrent server
