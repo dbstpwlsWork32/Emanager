@@ -2,14 +2,17 @@
   <v-row no-gutters align="stretch" class="b__video-viewer">
     <v-col cols="9">
       <v-card class="b__video-viewer__tv">
-        <video controls v-if="videoSrc">
+        <video controls v-if="videoSrc"
+          @keydown.right.prevent="videoNext"
+          @keydown.left.prevent="videoPrev"
+        >
           <source :src="videoSrc" :type="`video/${videoExt}`" />
           <track v-if="subtitle.path" :src="subtitle.path" kind="subtitles" default />
         </video>
       </v-card>
     </v-col>
     <v-col cols="3" class="b__video-viewer__collect">
-      <h4 class="b__video-viewer__collect__info text-center">
+      <h4 class="b__video-viewer__collect__info text-center white--text" style="background:#2f8dd0">
         {{nowFileIndex + 1}} / {{videoFileList.length}}
       </h4>
       <div class="b__video-viewer__collect__list">
@@ -97,6 +100,9 @@ export default Vue.extend({
       video: {
         dialog: false,
         openExternal: null
+      },
+      videoCTControl: {
+        index: 0
       }
     }
   },
@@ -192,6 +198,22 @@ export default Vue.extend({
           }
         }
       }
+    },
+    videoNext (e) {
+      this.videoCTControl.index++
+      if (this.videoCTControl.index > Math.floor(e.target.duration / 5)) this.videoCTControl.index = Math.floor(e.target.duration / 5)
+
+      setTimeout(() => {
+        e.target.currentTime = this.videoCTControl.index * 5
+      }, 1)
+    },
+    videoPrev (e) {
+      this.videoCTControl.index--
+      if (this.videoCTControl.index < 0) this.videoCTControl.index = 0
+
+      setTimeout(() => {
+        e.target.currentTime = this.videoCTControl.index * 5
+      }, 1)
     }
   },
   async created () {
