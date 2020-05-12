@@ -7,6 +7,17 @@
       class="one-directory__banner"
     >
       {{folderName}}
+      <v-rating
+        v-if="this.file.length"
+        v-model="rate"
+        dense
+        hover
+        size="20"
+        full-icon="mdi-heart"
+        empty-icon="mdi-heart-outline"
+        background-color="grey lighten-1"
+        color="red lighten-3"
+      ></v-rating>
     </v-banner>
 
     <v-toolbar
@@ -321,12 +332,12 @@ export default Vue.extend({
     },
     rate: {
       get: function () {
-        return this.dir.user.rate || 0
+        return this.user.rate || 0
       },
       set: function (newVal) {
         ipcRenderer.send('tableModify', {
-          tableId: this.dir.tableId,
-          docId: this.dir._id,
+          tableId: this.tableId,
+          docId: this.docId,
           replace: {
             $set: {
               user: {
